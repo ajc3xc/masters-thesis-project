@@ -5,11 +5,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Match architecture used in pretrained model
 model = SR_Block(
-    depth=4,          # usually 4; try 3 or 2 if mismatch
+    depth=4,
     mult=1,
     final_dim=144,
-    dropout=0.3
+    dropout=0.3,
+    ff_channel=144   # 🔥 IMPORTANT: this must match weight file
 ).to(device)
+
 
 # Load pretrained weights
 state_dict = torch.load("models/bsd100_2x_y_df2k_33.2.pth", map_location=device)
