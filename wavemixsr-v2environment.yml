@@ -27,3 +27,5 @@ dependencies:
       - huggingface_hub=0.21.4
       - super-image
       - onnxruntime-gpu
+
+#do this if running skimage I believe: export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
