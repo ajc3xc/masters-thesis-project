@@ -1,33 +1,26 @@
+#make sure channel priority is set to strict so cuda pytorch & cuda are used
 name: crack_pipeline
 channels:
-  - defaults
-
+  - pytorch
+  - nvidia
+  - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.11
   - pip
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=11.8  # or match your CUDA version
+  - onnx
+  - onnxruntime
+  - matplotlib
+  - scikit-image
+  - scikit-learn
+  - numpy
+  - pandas
+  - pillow
+  - jupyterlab
   - pip:
-    # GPU-enabled PyTorch wheels (no need for local nvcc or cudatoolkit) 
-    - torch==2.3.0+cu118 --index-url https://download.pytorch.org/whl/cu118  :contentReference[oaicite:2]{index=2}
-    - torchvision==0.18.0+cu118 --index-url https://download.pytorch.org/whl/cu118  :contentReference[oaicite:3]{index=3}
-    - torchaudio==2.3.0+cu118 --index-url https://download.pytorch.org/whl/cu118  :contentReference[oaicite:4]{index=4}
-
-    # Token-mixing & SR building blocks
-    - wavemix==0.2.4                         :contentReference[oaicite:5]{index=5}
-
-    # CrackMamba dependency
-    - causal_conv1d==1.1.1                  :contentReference[oaicite:6]{index=6}
-
-    # HF Hub for checkpoint downloads
-    - huggingface-hub                       :contentReference[oaicite:7]{index=7}
-
-    # SAM prompt encoders, etc.
-    - transformers                          :contentReference[oaicite:8]{index=8}
-
-    # Core imaging & math
-    - numpy                                 :contentReference[oaicite:9]{index=9}
-    - scipy                                 :contentReference[oaicite:10]{index=10}
-    - scikit-image                          :contentReference[oaicite:11]{index=11}
-    - opencv-python                         :contentReference[oaicite:12]{index=12}
-
-    # EfficientViT-SAM code (properly packaged)
-    - git+https://github.com/mit-han-lab/efficientvit.git  :contentReference[oaicite:13]{index=13}
+      - einops
+      - pywavelets
+      - kaggle
