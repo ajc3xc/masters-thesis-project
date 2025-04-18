@@ -12,7 +12,7 @@ dependencies:
   - torchaudio
   - pytorch-cuda=11.8  # or match your CUDA version
   - onnx
-  - onnxruntime
+  - datasets
   - matplotlib
   - scikit-image
   - scikit-learn
@@ -20,7 +20,10 @@ dependencies:
   - pandas
   - pillow
   - jupyterlab
+  - kaggle
   - pip:
       - einops
-      - pywavelets
-      - kaggle
+      - wavemix
+      - huggingface_hub=0.21.4
+      - super-image
+      - onnxruntime-gpu

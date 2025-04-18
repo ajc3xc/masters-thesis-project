@@ -1,3 +1,7 @@
+Set5/
+superres*/
+*.onnx
+*.zip
 WaveMixSR*
 WaveMixSR/
 data/
@@ -176,4 +180,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+WaveMixSR
 WaveMixSR
