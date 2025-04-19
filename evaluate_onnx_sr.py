@@ -10,7 +10,7 @@ import torch
 from tqdm import tqdm
 
 # === CONFIGURATION ===
-dataset_dir = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/superres_benchmarks/Set5/Set5'
+dataset_dir = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/superres_benchmarks/Set14/Set14'
 scale = 2
 onnx_model_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/models/sr_block_2x.onnx'
 
