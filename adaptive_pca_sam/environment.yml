@@ -1,0 +1,17 @@
+#need to redo this one!
+#prefix: /mnt/stor/ceph/gchen-lab/data/Adam/sam_pca_env
+name: adaptive_pca_t
+channels:
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - scikit-image
+  - scikit-learn
+  - tqdm
+  - pillow
+  - pip:
+    - huggingface_hub
+    - opencv-python

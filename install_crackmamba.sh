@@ -17,6 +17,7 @@ channels:
   - defaults
 dependencies:
   - python=3.8.15
+  - mkl=2024.0
   - pytorch-cuda=11.6
   - pytorch=1.12
   - pip

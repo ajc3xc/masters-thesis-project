@@ -6,8 +6,10 @@ channels:
   - defaults
 dependencies:
   - python=3.8.15
-  - pytorch=1.12.1
+  - mkl=2024.0
   - pytorch-cuda=11.6
+  - pytorch=1.12
   - pip
   - pip:
       - causal_conv1d==1.1.1
+      - packaging

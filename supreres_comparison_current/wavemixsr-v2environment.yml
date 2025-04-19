@@ -18,7 +18,7 @@ dependencies:
   - scikit-learn
   - numpy
   - pandas
-  - pillow
+sd
   - jupyterlab
   - kaggle
   - pip:
