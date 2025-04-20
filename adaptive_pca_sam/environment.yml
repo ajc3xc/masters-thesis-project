@@ -1,5 +1,5 @@
 #need to redo this one!
-#prefix: /mnt/stor/ceph/gchen-lab/data/Adam/sam_pca_env
+#prefix: /mnt/stor/ceph/gchen-lab/data/Adam/sam_pca_test
 name: adaptive_pca_t
 channels:
   - nvidia
