@@ -1,15 +1,12 @@
 import cv2
 import numpy as np
 from skimage.morphology import skeletonize
-from scipy.ndimage import distance_transform_edt
-import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter1d
 
 def get_skeleton(binary_mask):
-    """Skeletonize the binary crack mask."""
     return skeletonize(binary_mask > 0).astype(np.uint8)
 
 def extract_neighbors(point, window_size, image_shape):
-    """Return a list of (y,x) coordinates in the local window."""
     y, x = point
     half = window_size // 2
     y_min, y_max = max(0, y - half), min(image_shape[0], y + half + 1)
@@ -17,7 +14,6 @@ def extract_neighbors(point, window_size, image_shape):
     return np.array([[yi, xi] for yi in range(y_min, y_max) for xi in range(x_min, x_max)])
 
 def compute_curvature(neighbors):
-    """Estimate curvature via second derivatives (approximate)."""
     if len(neighbors) < 3:
         return 0
     dy = np.gradient(neighbors[:, 0])
@@ -28,36 +24,38 @@ def compute_curvature(neighbors):
     return np.mean(curvature)
 
 def perform_pca(neighbors):
-    """Run PCA on the local neighborhood to get tangent and normal vectors."""
     pca_data = neighbors - np.mean(neighbors, axis=0)
     _, _, vh = np.linalg.svd(pca_data)
     tangent = vh[0]
     normal = vh[1]
     return tangent, normal
 
-def sample_edges_along_normal(center, normal, binary_mask, max_distance=20):
-    """Walk along both sides of the normal direction to find mask edges."""
+def sample_edges_along_normal(center, normal, confidence_map, mask, max_distance=20):
+    """
+    Samples along both directions of the normal vector to find edge crossings
+    Uses the confidence map (or the binary mask if no logits available)
+    """
     y0, x0 = center
     samples = []
     for sign in [-1, 1]:
         for d in range(1, max_distance):
             dx, dy = normal[1] * d * sign, normal[0] * d * sign
             xi, yi = int(round(x0 + dx)), int(round(y0 + dy))
-            if 0 <= yi < binary_mask.shape[0] and 0 <= xi < binary_mask.shape[1]:
-                if binary_mask[yi, xi] == 0:
-                    samples.append((xi, yi))
+            if 0 <= yi < mask.shape[0] and 0 <= xi < mask.shape[1]:
+                if mask[yi, xi] == 0:
+                    # Optional: subpixel interpolation
+                    conf = confidence_map[yi, xi] if confidence_map is not None else 1.0
+                    samples.append((xi, yi, conf))
                     break
     return samples
 
 def calculate_crack_width(edge_points):
-    """Euclidean distance between two edge points."""
     if len(edge_points) == 2:
-        (x1, y1), (x2, y2) = edge_points
+        (x1, y1, _), (x2, y2, _) = edge_points
         return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
     return None
 
-def adaptive_crack_width(mask, min_window=7, max_window=15, curvature_thresh=0.1):
-    """Main logic: adaptive PCA crack width estimation without logits."""
+def adaptive_crack_width(mask, confidence_map=None, min_window=7, max_window=15, curvature_thresh=0.1, confidence_thresh=0.3):
     skeleton = get_skeleton(mask)
     crack_widths = []
 
@@ -75,7 +73,11 @@ def adaptive_crack_width(mask, min_window=7, max_window=15, curvature_thresh=0.1
             continue
 
         tangent, normal = perform_pca(active)
-        edge_pts = sample_edges_along_normal((y, x), normal, mask)
+        confidence = confidence_map[y, x] if confidence_map is not None else 1.0
+        if confidence < confidence_thresh:
+            continue
+
+        edge_pts = sample_edges_along_normal((y, x), normal, confidence_map, mask)
         width = calculate_crack_width(edge_pts)
 
         if width is not None:
@@ -83,34 +85,11 @@ def adaptive_crack_width(mask, min_window=7, max_window=15, curvature_thresh=0.1
 
     return crack_widths
 
-def draw_widths_on_mask(mask, crack_widths, color=(0, 255, 0)):
-    """Draw width lines over the binary mask image."""
-    overlay = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-    for (cx, cy), width in crack_widths:
-        perp = np.array([-1.0, 0.0])  # Approx placeholder (use normal for real)
-        pt1 = (int(cx - width/2), int(cy))
-        pt2 = (int(cx + width/2), int(cy))
-        cv2.line(overlay, pt1, pt2, color, 1)
-        cv2.putText(overlay, f"{width:.1f}", (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 0, 255), 1)
-    return overlay
-
+# Example usage
 if __name__ == "__main__":
+    image_path = "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/cracks/crack_segmentation_dataset/images/CFD_001.jpg"
     mask_path = "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/cracks/crack_segmentation_dataset/masks/CFD_001.jpg"
-    output_path = "adaptive_width_output.png"
+    output_path = "output/pca_result.png"
+    csv_path = "output/widths.csv"
 
-    # Load binary crack mask
-    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-    if mask.max() > 1:
-        _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-
-    widths = adaptive_crack_width(mask)
-
-    if not widths:
-        print("No widths estimated.")
-    else:
-        print(f"Estimated {len(widths)} widths. Mean: {np.mean([w for _, w in widths]):.2f} px")
-
-    # Save result overlay on mask
-    out_img = draw_widths_on_mask(mask, widths)
-    cv2.imwrite(output_path, out_img)
-    print(f"[✓] Saved visual result to {output_path}")
+    run_adaptive_pca_pipeline(image_path, mask_path, output_path, csv_path, show_labels=False)
