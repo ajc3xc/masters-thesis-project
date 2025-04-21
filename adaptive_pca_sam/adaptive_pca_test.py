@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from skimage.morphology import skeletonize
 from scipy.ndimage import distance_transform_edt
+import matplotlib.pyplot as plt
 
 def get_skeleton(binary_mask):
     return skeletonize(binary_mask > 0).astype(np.uint8)
@@ -76,7 +77,7 @@ def adaptive_crack_width(mask, min_window=7, max_window=15, curvature_thresh=0.1
 
     return crack_widths
 
-def draw_width_lines(mask, crack_widths, color=(0, 255, 0)):
+'''def draw_width_lines(mask, crack_widths, color=(0, 255, 0)):
     overlay = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     for (cx, cy), normal, width in crack_widths:
         perp = np.array([-normal[1], normal[0]], dtype=np.float32)
@@ -85,6 +86,36 @@ def draw_width_lines(mask, crack_widths, color=(0, 255, 0)):
         pt1 = (int(cx + perp[0] * half_width), int(cy + perp[1] * half_width))
         pt2 = (int(cx - perp[0] * half_width), int(cy - perp[1] * half_width))
         cv2.line(overlay, pt1, pt2, color, 1)
+    return overlay'''
+def draw_width_lines(mask, widths, colormap='jet'):
+    """
+    Draws crack width lines with color coding based on width.
+    """
+    overlay = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    if not widths:
+        return overlay
+
+    # Extract widths and normalize for colormap
+    width_values = [w for _, _, w in widths]
+    min_w, max_w = min(width_values), max(width_values)
+    norm = plt.Normalize(vmin=min_w, vmax=max_w)
+    cmap = plt.get_cmap(colormap)
+
+    for (cx, cy), normal, width in widths:
+        # Determine color based on width
+        color = cmap(norm(width))[:3]  # RGB tuple
+        color = tuple(int(255 * c) for c in color[::-1])  # Convert to BGR for OpenCV
+
+        # Calculate line endpoints
+        perp = np.array([-normal[1], normal[0]], dtype=np.float32)
+        perp /= np.linalg.norm(perp) + 1e-6
+        half = width / 2
+        pt1 = (int(cx + perp[0] * half), int(cy + perp[1] * half))
+        pt2 = (int(cx - perp[0] * half), int(cy - perp[1] * half))
+
+        # Draw line
+        cv2.line(overlay, pt1, pt2, color, 2)
+
     return overlay
 
 def save_crack_widths_csv(crack_widths, output_csv):
