@@ -1,7 +1,11 @@
+efficientvit-sam/
+efficientvit/
 Set5/
 superres*/
 *.onnx
 *.zip
+SCSegamba/
+WaveMixSR
 WaveMixSR*
 WaveMixSR/
 data/
