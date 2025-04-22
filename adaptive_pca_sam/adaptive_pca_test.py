@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 import pandas as pd
-from skimage.morphology import skeletonize
-from scipy.ndimage import distance_transform_edt
 import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter1d
+from skimage.morphology import skeletonize
 
 def get_skeleton(binary_mask):
     return skeletonize(binary_mask > 0).astype(np.uint8)
@@ -54,8 +54,8 @@ def calculate_crack_width(edge_points):
 def adaptive_crack_width(mask, min_window=7, max_window=15, curvature_thresh=0.1):
     skeleton = get_skeleton(mask)
     crack_widths = []
-
     points = np.argwhere(skeleton > 0)
+
     for (y, x) in points:
         neighbors = extract_neighbors((y, x), max_window, mask.shape)
         local_skel = skeleton[neighbors[:, 0], neighbors[:, 1]]
@@ -77,44 +77,35 @@ def adaptive_crack_width(mask, min_window=7, max_window=15, curvature_thresh=0.1
 
     return crack_widths
 
-'''def draw_width_lines(mask, crack_widths, color=(0, 255, 0)):
-    overlay = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-    for (cx, cy), normal, width in crack_widths:
-        perp = np.array([-normal[1], normal[0]], dtype=np.float32)
-        perp /= np.linalg.norm(perp) + 1e-6
-        half_width = width / 2.0
-        pt1 = (int(cx + perp[0] * half_width), int(cy + perp[1] * half_width))
-        pt2 = (int(cx - perp[0] * half_width), int(cy - perp[1] * half_width))
-        cv2.line(overlay, pt1, pt2, color, 1)
-    return overlay'''
-def draw_width_lines(mask, widths, colormap='jet'):
-    """
-    Draws crack width lines with color coding based on width.
-    """
+def draw_width_lines(mask, widths, colormap='viridis'):
     overlay = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     if not widths:
         return overlay
 
-    # Extract widths and normalize for colormap
-    width_values = [w for _, _, w in widths]
-    min_w, max_w = min(width_values), max(width_values)
-    norm = plt.Normalize(vmin=min_w, vmax=max_w)
+    # Extract and smooth widths
+    raw_widths = np.array([w for _, _, w in widths])
+    smoothed = gaussian_filter1d(raw_widths, sigma=2)
+
+    # Normalize for colormap
+    #norm = plt.Normalize(vmin=smoothed.min(), vmax=smoothed.max())
+    norm = plt.Normalize(vmin=np.percentile(smoothed, 5), vmax=np.percentile(smoothed, 95))
     cmap = plt.get_cmap(colormap)
 
-    for (cx, cy), normal, width in widths:
-        # Determine color based on width
-        color = cmap(norm(width))[:3]  # RGB tuple
-        color = tuple(int(255 * c) for c in color[::-1])  # Convert to BGR for OpenCV
+    for ((cx, cy), normal, _), width in zip(widths, smoothed):
+        color = cmap(norm(width))[:3]  # RGB
+        color = tuple(int(255 * c) for c in color[::-1])  # BGR for OpenCV
 
-        # Calculate line endpoints
         perp = np.array([-normal[1], normal[0]], dtype=np.float32)
         perp /= np.linalg.norm(perp) + 1e-6
         half = width / 2
         pt1 = (int(cx + perp[0] * half), int(cy + perp[1] * half))
         pt2 = (int(cx - perp[0] * half), int(cy - perp[1] * half))
 
-        # Draw line
-        cv2.line(overlay, pt1, pt2, color, 2)
+        cv2.line(overlay, pt1, pt2, color, 1)
+
+    # Optional: faint grayscale background blending
+    background = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    overlay = cv2.addWeighted(background, 0.25, overlay, 0.75, 0)
 
     return overlay
 
@@ -127,7 +118,7 @@ def save_crack_widths_csv(crack_widths, output_csv):
     print(f"[✓] Saved crack widths to: {output_csv}")
 
 if __name__ == "__main__":
-    output_img_path = "width_overlay.png"
+    output_img_path = "smoothed_norm_width_overlay.png"
     output_csv_path = "crack_widths.csv"
     mask_path = "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/cracks/crack_segmentation_dataset/masks/CFD_001.jpg"
 

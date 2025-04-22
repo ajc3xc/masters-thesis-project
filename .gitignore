@@ -8,7 +8,7 @@ SCSegamba/
 WaveMixSR
 WaveMixSR*
 WaveMixSR/
-data/
+*data/
 *.pt*
 # Byte-compiled / optimized / DLL files
 __pycache__/
