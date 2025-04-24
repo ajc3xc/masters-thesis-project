@@ -51,6 +51,7 @@ def get_args_parser():
     parser.add_argument('--min_lr', default=1e-6, type=float)
     parser.add_argument('--weight_decay', default=0.01, type=float)
     parser.add_argument('--epochs', default=50, type=int)
+    parser.add_argument('--attention_type', default='gbc', choices=['gbc-eca','eca','sfa','sebica'], help="MFS block attention module", type=str)
     parser.add_argument('--start_epoch', default=0, type=int)
     parser.add_argument('--lr_drop', default=30, type=int)
     parser.add_argument('--sgd', action='store_true')

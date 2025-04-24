@@ -4,7 +4,7 @@ Author: Hui Liu
 Github: https://github.com/Karl1109
 Email: liuhui@ieee.org
 
-ECABlock created by adam camerer
+Author: Adam Camerer via ChatGPT
 '''
 
 import torch
