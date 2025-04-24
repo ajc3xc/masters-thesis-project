@@ -18,11 +18,6 @@ DATASET_LIST = [
         "name": "Crack_Conglomerate",
         "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Train",
         "test":  "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test",
-    },
-    {
-        "name": "CrackSeg9k",
-        "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/crackseg9k/Final-Dataset-Vol1/Final-Dataset-Vol1/Final_Masks",
-        "test":  "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/crackseg9k/Final-Dataset-Vol1/Final-Dataset-Vol1/Images",
     }
 ]
 
