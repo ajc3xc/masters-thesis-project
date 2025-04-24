@@ -1,3 +1,6 @@
+checkpoints/
+data/
+results/
 efficientvit-sam/
 efficientvit/
 Set5/
@@ -8,6 +11,7 @@ SCSegamba/
 WaveMixSR
 WaveMixSR*
 WaveMixSR/
+figures/
 *data/
 *.pt*
 # Byte-compiled / optimized / DLL files
