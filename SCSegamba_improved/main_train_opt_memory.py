@@ -191,7 +191,8 @@ def train_on_dataset(dataset_cfg, args):
                 for k, v in vars(args).items()
             }
 
-        torch.save(safe_checkpoint, checkpoint_file)
+        epoch_ckpt_path = process_folder / f'checkpoint_epoch{epoch}.pth'
+        torch.save(safe_checkpoint, epoch_ckpt_path)
 
 
         # === Validation ===
