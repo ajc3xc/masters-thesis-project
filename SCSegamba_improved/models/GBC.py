@@ -25,7 +25,9 @@ class BottConv(nn.Module):
 
 def get_norm_layer(norm_type, channels, num_groups):
     if norm_type == 'GN':
-        return nn.GroupNorm(num_groups=num_groups, num_channels=channels)
+        # Ensure at least 1 group and no division by zero
+        groups = max(1, min(num_groups, channels))
+        return nn.GroupNorm(num_groups=groups, num_channels=channels)
     else:
         return nn.InstanceNorm3d(channels)
 

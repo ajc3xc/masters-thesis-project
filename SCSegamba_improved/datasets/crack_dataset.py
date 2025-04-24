@@ -55,7 +55,8 @@ class CrackDataset(BaseDataset):
             lab = cv2.cvtColor(lab, cv2.COLOR_BGR2GRAY)
 
         # adjust the image size
-        w, h = self.args.load_width, self.args.load_height
+        w, h = self.args.input_size, self.args.input_size
+        #w, h = self.args.load_width, self.args.load_height
         if w > 0 or h > 0:
             img = cv2.resize(img, (w, h), interpolation=cv2.INTER_CUBIC)
             lab = cv2.resize(lab, (w, h), interpolation=cv2.INTER_CUBIC)
