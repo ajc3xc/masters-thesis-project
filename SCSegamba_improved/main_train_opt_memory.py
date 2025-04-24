@@ -44,14 +44,14 @@ def get_args_parser():
     parser.add_argument('--BCELoss_ratio', default=0.87, type=float)
     parser.add_argument('--DiceLoss_ratio', default=0.13, type=float)
     parser.add_argument('--Norm_Type', default='GN', type=str)
-    parser.add_argument('--batch_size_train', default=16, type=int)
-    parser.add_argument('--batch_size_test', default=16, type=int)
+    parser.add_argument('--batch_size_train', default=4, type=int)
+    parser.add_argument('--batch_size_test', default=4, type=int)
     parser.add_argument('--lr_scheduler', default='PolyLR', type=str)
     parser.add_argument('--lr', default=5e-4, type=float)
     parser.add_argument('--min_lr', default=1e-6, type=float)
     parser.add_argument('--weight_decay', default=0.01, type=float)
     parser.add_argument('--epochs', default=50, type=int)
-    parser.add_argument('--attention_type', default='gbc', choices=['gbc-eca','eca','sfa','sebica'], help="MFS block attention module", type=str)
+    parser.add_argument('--attention_type', default='gbc_eca', choices=['gbc_eca','eca','sfa','sebica'], help="MFS block attention module", type=str)
     parser.add_argument('--start_epoch', default=0, type=int)
     parser.add_argument('--lr_drop', default=30, type=int)
     parser.add_argument('--sgd', action='store_true')
@@ -59,7 +59,7 @@ def get_args_parser():
     parser.add_argument('--device', default='cuda', type=str)
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--serial_batches', action='store_true')
-    parser.add_argument('--num_threads', default=12, type=int)
+    parser.add_argument('--num_threads', default=4, type=int)
     parser.add_argument('--input_size', default=512, type=int)
     return parser
 
@@ -99,8 +99,8 @@ def train_on_dataset(dataset_cfg, args):
         return
 
     # === Resume or create new run directory ===
-    base_path = Path(args.output_dir)
-    results_base = Path("results")
+    base_path = Path(args.output_dir) / args.attention_type
+    results_base = Path("results") / args.attention_type
 
     existing = sorted(glob.glob(str(base_path / f"*Dataset->{dataset_name}")), reverse=True)
     if existing and getattr(args, 'resume', True):
@@ -152,7 +152,20 @@ def train_on_dataset(dataset_cfg, args):
         print(f"[✓] Resuming from: {latest_ckpt.name}")
         checkpoint = torch.load(latest_ckpt, weights_only=False)
 
-        model.load_state_dict(checkpoint['model'])
+        def remap_gbc_to_attention_keys(state_dict):
+            new_state = {}
+            for k, v in state_dict.items():
+                if "MFS.GBC_C." in k:
+                    new_key = k.replace("MFS.GBC_C", "MFS.attention")
+                    new_state[new_key] = v
+                else:
+                    new_state[k] = v
+            return new_state
+
+        checkpoint['model'] = remap_gbc_to_attention_keys(checkpoint['model'])
+        missing, unexpected = model.load_state_dict(checkpoint['model'], strict=False)
+        print("⚠️ [Patched Load] Missing:", missing)
+        print("⚠️ [Patched Load] Unexpected:", unexpected)
         optimizer.load_state_dict(checkpoint['optimizer'])
         scheduler.load_state_dict(checkpoint['lr_scheduler'])
         scaler.load_state_dict(checkpoint['scaler'])

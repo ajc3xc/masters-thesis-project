@@ -53,8 +53,9 @@ class MFS(nn.Module):
             self.attention = SFA(embedding_dim)
         elif attention_type == 'sebica':
             self.attention = SEBICA(embedding_dim)
-        elif attention_type == 'gbc':
+        elif attention_type == 'gbc_eca':
             self.attention = GBC(embedding_dim)
+            #self.GBC_C = self.attention  # alias for backward compatibility
         else:
             raise ValueError(f"Unsupported attention type: {attention_type}")
 
