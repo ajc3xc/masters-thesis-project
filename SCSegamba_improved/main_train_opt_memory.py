@@ -1,18 +1,37 @@
+import multiprocessing as mp
+try:
+    mp.set_start_method('forkserver')
+except RuntimeError:
+    pass  # Already set
 
 import os
 import time
+import glob
 import random
+import _codecs
 import argparse
+from argparse import Namespace
 from pathlib import Path
 
+# ─── Third-party libraries ────────────────────────────────────────────────
 import numpy as np
+from sklearn.metrics import f1_score, jaccard_score
 import torch
 import torch.backends.cudnn as cudnn
-from torch.cuda.amp import autocast
+from torch.amp import GradScaler, autocast
+from torch.serialization import add_safe_globals
 from tqdm import tqdm
 import cv2
+from mmengine.optim.scheduler.lr_scheduler import PolyLR
 
-# datasets_to_train_on.py
+# ─── Local application imports ────────────────────────────────────────────
+from datasets import create_dataset
+from models import build_model
+from engine import train_one_epoch
+from eval.evaluate import eval
+from util.logger import get_logger
+add_safe_globals([argparse.Namespace, np.core.multiarray.scalar, np.dtype, _codecs.encode])
+
 DATASET_LIST = [
     {
         "name": "Crack_Conglomerate",
@@ -21,31 +40,13 @@ DATASET_LIST = [
     }
 ]
 
-from models import build_model
-from datasets import create_dataset
-from eval.evaluate import eval
-from util.logger import get_logger
-from mmengine.optim.scheduler.lr_scheduler import PolyLR
-from engine import train_one_epoch
-import glob
-import time
-from pathlib import Path
-from torch.amp import GradScaler
-import torch.backends.cudnn as cudnn
-import numpy as np, random
-from torch.serialization import add_safe_globals
-from argparse import Namespace
-from sklearn.metrics import f1_score, jaccard_score
-
-add_safe_globals([Namespace])
-
 def get_args_parser():
     parser = argparse.ArgumentParser('SCSEGAMBA FOR CRACK', add_help=False)
     parser.add_argument('--BCELoss_ratio', default=0.87, type=float)
     parser.add_argument('--DiceLoss_ratio', default=0.13, type=float)
     parser.add_argument('--Norm_Type', default='GN', type=str)
-    parser.add_argument('--batch_size_train', default=4, type=int)
-    parser.add_argument('--batch_size_test', default=4, type=int)
+    parser.add_argument('--batch_size_train', default=8, type=int)
+    parser.add_argument('--batch_size_test', default=8, type=int)
     parser.add_argument('--lr_scheduler', default='PolyLR', type=str)
     parser.add_argument('--lr', default=5e-4, type=float)
     parser.add_argument('--min_lr', default=1e-6, type=float)
@@ -59,7 +60,7 @@ def get_args_parser():
     parser.add_argument('--device', default='cuda', type=str)
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--serial_batches', action='store_true')
-    parser.add_argument('--num_threads', default=4, type=int)
+    parser.add_argument('--num_threads', default=8, type=int)
     parser.add_argument('--input_size', default=512, type=int)
     return parser
 
@@ -258,18 +259,32 @@ def train_on_dataset(dataset_cfg, args):
             log_train.info(f"New best model at epoch {epoch}: mIoU = {best_mIoU:.4f}")
 
     # === ONNX Export ===
-    model.load_state_dict(torch.load(checkpoint_file))
+    checkpoint = torch.load(checkpoint_file, weights_only=False)
+    model.load_state_dict(checkpoint["model"])
     model.eval()
+    #dummy_input = torch.randn(1, 3, args.input_size, args.input_size).to(device)
     dummy_input = torch.randn(1, 1, args.input_size, args.input_size).to(device)
+    class ModelWrapper(torch.nn.Module):
+        def __init__(self, model):
+            super().__init__()
+            self.model = model
+
+        def forward(self, x):
+            if x.shape[1] == 1:
+                x = x.repeat(1, 3, 1, 1)  # (B,1,H,W) → (B,3,H,W)
+            return self.model(x)
+
+    model_to_export = ModelWrapper(model)
+
     torch.onnx.export(
-        model,
+        model_to_export,
         dummy_input,
         onnx_file,
         input_names=["input"],
         output_names=["output"],
         export_params=True,
         do_constant_folding=True,
-        opset_version=15,
+        opset_version=16,
         dynamic_axes={'input': {2: 'height', 3: 'width'}, 'output': {2: 'height', 3: 'width'}}
     )
     print(f"[✓] Finished {dataset_name} — Best mIoU: {best_mIoU:.4f}")

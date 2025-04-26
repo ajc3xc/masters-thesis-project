@@ -26,17 +26,18 @@ class SEBICA(nn.Module):
         )
 
     def forward(self, x):
-        # Channel Attention
         b, c, h, w = x.size()
-        x_perm = x.view(b, c, -1)
-        channel_att = self.channel_att(x_perm)
-        channel_att = channel_att.view(b, c, 1, 1)
-        x = x * channel_att
+
+        # Channel Attention
+        x_perm = x.view(b, c, -1)                        # [B, C, H*W]
+        channel_att = self.channel_att(x_perm)           # [B, C]
+        channel_att = channel_att.view(b, c, 1, 1)       # [B, C, 1, 1]
+        x = x * channel_att                              # Apply channel attention
 
         # Spatial Attention
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        spatial_att = self.spatial_att(torch.cat([avg_out, max_out], dim=1))
-        x = x * spatial_att
+        avg_out = torch.mean(x, dim=1, keepdim=True)     # [B, 1, H, W]
+        max_out, _ = torch.max(x, dim=1, keepdim=True)   # [B, 1, H, W]
+        spatial_att = self.spatial_att(torch.cat([avg_out, max_out], dim=1))  # [B, 1, H, W]
+        x = x * spatial_att                              # Apply spatial attention
 
         return x

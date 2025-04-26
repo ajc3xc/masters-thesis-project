@@ -1,3 +1,5 @@
+models/
+*.out
 checkpoints/
 data/
 results/
