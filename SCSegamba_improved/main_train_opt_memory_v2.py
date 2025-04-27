@@ -62,26 +62,8 @@ def get_args_parser():
     parser.add_argument('--serial_batches', action='store_true')
     parser.add_argument('--num_threads', default=8, type=int)
     parser.add_argument('--input_size', default=512, type=int)
+    parser.add_argument('--use_dynamic_fusion', action='store_true', help="Choose dynamic instead of static fusion")
     return parser
-
-
-def export_to_onnx(model, args, dataset_name):
-    onnx_dir = Path("onnx_exports")
-    onnx_dir.mkdir(parents=True, exist_ok=True)
-    model.eval()
-    dummy_input = torch.randn(1, 1, 512, 512).to(args.device)
-    torch.onnx.export(
-        model,
-        dummy_input,
-        onnx_dir / f"{dataset_name}_best.onnx",
-        input_names=["input"],
-        output_names=["output"],
-        export_params=True,
-        do_constant_folding=True,
-        opset_version=15,
-        dynamic_axes={'input': {2: 'height', 3: 'width'}, 'output': {2: 'height', 3: 'width'}}
-    )
-    print(f"[✓] Exported ONNX for {dataset_name}.")
 
 def evaluate_segmentation(preds, labels):
     flat_preds = np.concatenate([p.flatten() for p in preds])
@@ -136,6 +118,11 @@ def train_on_dataset(dataset_cfg, args):
     # === Build model and optimizer ===
     model, criterion = build_model(args)
     model.to(device)
+    try:
+        model = torch.compile(model)
+        print("[✓] Model compiled successfully with torch.compile!")
+    except Exception as e:
+        print(f"[!] torch.compile not available or failed: {e}")
     scaler = GradScaler()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = PolyLR(optimizer, eta_min=args.min_lr, begin=args.start_epoch, end=args.epochs)
@@ -264,16 +251,25 @@ def train_on_dataset(dataset_cfg, args):
     checkpoint = torch.load(checkpoint_file, weights_only=False)
     model.load_state_dict(checkpoint["model"])
     model.eval()
+    #prevent weird cuda errors?
+    model = model.cpu()
     #dummy_input = torch.randn(1, 3, args.input_size, args.input_size).to(device)
-    dummy_input = torch.randn(1, 1, args.input_size, args.input_size)
+    dummy_input = torch.randn(1, 1, args.input_size, args.input_size).to(device)
     class ModelWrapper(torch.nn.Module):
         def __init__(self, model):
             super().__init__()
             self.model = model
 
         def forward(self, x):
-            if x.shape[1] == 1:
-                x = x.expand(-1, 3, -1, -1)
+            #if x.shape[1] == 1:
+            #    x = x.repeat(-1, 3, -1, -1)  # (B,1,H,W) → (B,3,H,W)
+            expanded = x.expand(-1, 3, -1, -1)
+            is_single_channel = (x.shape[1] == 1)
+            if isinstance(is_single_channel_tensor, bool):
+                is_single_channel_tensor = torch.full((1, 1, 1, 1), is_single_channel_tensor, dtype=torch.bool, device=x.device)
+            else:
+                is_single_channel_tensor = is_single_channel_tensor.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+            x = torch.where(is_single_channel_tensor, expanded, x)
             return self.model(x)
 
     model_to_export = ModelWrapper(model)
