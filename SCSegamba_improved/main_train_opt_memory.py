@@ -1,8 +1,8 @@
-import multiprocessing as mp
-try:
-    mp.set_start_method('forkserver')
-except RuntimeError:
-    pass  # Already set
+#import multiprocessing as mp
+#try:
+#    mp.set_start_method('forkserver')
+#except RuntimeError:
+#    pass  # Already set
 
 import os
 import time

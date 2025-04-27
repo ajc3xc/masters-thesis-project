@@ -10,7 +10,7 @@ if conda_prefix:
         print(f"✅ Preloaded {candidate}")
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from skimage.metrics import structural_similarity as ssim
-#howimport sys
+#import sys
 #sys.exit()
 import numpy as np
 from tqdm import tqdm
@@ -38,7 +38,7 @@ except ImportError:
 # === CONFIGURATION ===
 dataset_dir = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/superres_benchmarks/Set14/Set14'
 scale = 2
-onnx_model_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/models/wavemixsrv2_srblock_2x_fullflex.onnx'
+onnx_model_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/superes_comparison_current_final/models/wavemixsrv2_srblock_2x_fullflex.onnx'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 hr_dir = os.path.join(dataset_dir, 'original')

@@ -45,8 +45,9 @@ Pixel-level segmentation of structural cracks across various scenarios remains a
 You can create your own conda environment for SCSegamba based on the following command⚙️:
 
 ```shell
-conda create -n SCSegamba python=3.10 -y
-conda activate SCSegamba
+micromamba create -n SCSegamba python=3.10 -y
+micromamba activate SCSegamba
+micromamba install onnx -y
 pip install torch==2.1.2+cu116 torchvision==0.16.2+cu116 torchaudio==2.1.2 --extra-index-url https://download.pytorch.org/whl/cu116
 pip install -U openmim
 mim install mmcv-full
