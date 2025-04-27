@@ -264,6 +264,8 @@ def train_on_dataset(dataset_cfg, args):
     checkpoint = torch.load(checkpoint_file, weights_only=False)
     model.load_state_dict(checkpoint["model"])
     model.eval()
+    #prevent weird cuda errors?
+    model = model.cpu()
     #dummy_input = torch.randn(1, 3, args.input_size, args.input_size).to(device)
     dummy_input = torch.randn(1, 1, args.input_size, args.input_size).to(device)
     class ModelWrapper(torch.nn.Module):
@@ -276,8 +278,10 @@ def train_on_dataset(dataset_cfg, args):
             #    x = x.repeat(-1, 3, -1, -1)  # (B,1,H,W) → (B,3,H,W)
             expanded = x.expand(-1, 3, -1, -1)
             is_single_channel = (x.shape[1] == 1)
-            is_single_channel_tensor = torch.tensor(is_single_channel, dtype=torch.bool, device=x.device)
-            is_single_channel_tensor = is_single_channel_tensor.view(1, 1, 1, 1)  # shape (1,1,1,1) to broadcast
+            if isinstance(is_single_channel_tensor, bool):
+                is_single_channel_tensor = torch.full((1, 1, 1, 1), is_single_channel_tensor, dtype=torch.bool, device=x.device)
+            else:
+                is_single_channel_tensor = is_single_channel_tensor.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
             x = torch.where(is_single_channel_tensor, expanded, x)
             return self.model(x)
 
