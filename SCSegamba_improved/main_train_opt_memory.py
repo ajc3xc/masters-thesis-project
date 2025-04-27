@@ -94,7 +94,9 @@ def evaluate_segmentation(preds, labels):
 
 def train_on_dataset(dataset_cfg, args):
     dataset_name = dataset_cfg['name']
-    onnx_file = Path("onnx_exports") / f"{dataset_name}_best.onnx"
+    onnx_dir = Path("onnx_exports")
+    onnx_dir.mkdir(exist_ok=True)
+    onnx_file = onnx_dir / f"{dataset_name}_{args.attention_type}_best.onnx"
     if onnx_file.exists():
         print(f"[✓] Skipping {dataset_name} (ONNX already exists)")
         return
@@ -243,7 +245,7 @@ def train_on_dataset(dataset_cfg, args):
                 all_labels.append((target_np > 0.5).astype(np.uint8))
 
         metrics = evaluate_segmentation(all_preds, all_labels)
-        print(f"[{dataset_name}] Epoch {epoch}: mIoU = {metrics['mIoU']:.4f}, F1 = {metrics['F1']:.4f}")
+        print(f"[{dataset_name}] Epoch {epoch}: mIoU = {metrics['mIoU']:.4f}")
         if metrics['mIoU'] > best_mIoU:
             best_mIoU = metrics['mIoU']
             #torch.save(model.state_dict(), checkpoint_file)
@@ -270,8 +272,13 @@ def train_on_dataset(dataset_cfg, args):
             self.model = model
 
         def forward(self, x):
-            if x.shape[1] == 1:
-                x = x.repeat(1, 3, 1, 1)  # (B,1,H,W) → (B,3,H,W)
+            #if x.shape[1] == 1:
+            #    x = x.repeat(-1, 3, -1, -1)  # (B,1,H,W) → (B,3,H,W)
+            expanded = x.expand(-1, 3, -1, -1)
+            is_single_channel = (x.shape[1] == 1)
+            is_single_channel_tensor = torch.tensor(is_single_channel, dtype=torch.bool, device=x.device)
+            is_single_channel_tensor = is_single_channel_tensor.view(1, 1, 1, 1)  # shape (1,1,1,1) to broadcast
+            x = torch.where(is_single_channel_tensor, expanded, x)
             return self.model(x)
 
     model_to_export = ModelWrapper(model)
