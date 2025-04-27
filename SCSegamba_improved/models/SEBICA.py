@@ -11,33 +11,20 @@ import torch.nn.functional as F
 class SEBICA(nn.Module):
     def __init__(self, in_channels):
         super(SEBICA, self).__init__()
-        # Bidirectional Channel Attention
-        self.channel_att = nn.Sequential(
-            nn.Conv1d(in_channels, in_channels, kernel_size=1),
-            nn.ReLU(inplace=True),
-            nn.Conv1d(in_channels, in_channels, kernel_size=1),
-            nn.Sigmoid()
-        )
-
-        # Spatial Attention
-        self.spatial_att = nn.Sequential(
-            nn.Conv2d(2, 1, kernel_size=7, padding=3),
-            nn.Sigmoid()
-        )
+        self.channel_reduce = nn.Conv1d(in_channels, in_channels, kernel_size=1, bias=False)
+        self.spatial_att = nn.Conv2d(2, 1, kernel_size=7, padding=3, bias=False)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         b, c, h, w = x.size()
-
         # Channel Attention
-        x_perm = x.view(b, c, -1)                        # [B, C, H*W]
-        channel_att = self.channel_att(x_perm)           # [B, C]
-        channel_att = channel_att.view(b, c, 1, 1)       # [B, C, 1, 1]
-        x = x * channel_att                              # Apply channel attention
+        x_perm = x.flatten(2)                  # [B, C, H*W]
+        channel_att = self.channel_reduce(x_perm).mean(-1).view(b, c, 1, 1)
+        x = x * self.sigmoid(channel_att)
 
         # Spatial Attention
-        avg_out = torch.mean(x, dim=1, keepdim=True)     # [B, 1, H, W]
-        max_out, _ = torch.max(x, dim=1, keepdim=True)   # [B, 1, H, W]
-        spatial_att = self.spatial_att(torch.cat([avg_out, max_out], dim=1))  # [B, 1, H, W]
-        x = x * spatial_att                              # Apply spatial attention
-
+        avg_out = x.mean(dim=1, keepdim=True)
+        max_out, _ = x.max(dim=1, keepdim=True)
+        spatial_att = self.sigmoid(self.spatial_att(torch.cat([avg_out, max_out], dim=1)))
+        x = x * spatial_att
         return x
