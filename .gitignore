@@ -1,3 +1,6 @@
+*.pixi
+micromamba
+micromamba*/
 models/
 *.out
 checkpoints/
@@ -193,3 +196,6 @@ cython_debug/
 WaveMixSR
 WaveMixSR
 superresolution_comparison/
+# pixi environments
+.pixi
+*.egg-info
