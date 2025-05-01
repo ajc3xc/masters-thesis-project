@@ -38,7 +38,7 @@ except ImportError:
 # === CONFIGURATION ===
 dataset_dir = '/mnt/c/Users/13144/Documents/Masters_Thesis/super_resolution/Set14'
 scale = 2
-onnx_model_path = '/mnt/c/Users/13144/Documents/Masters_Thesis/super_resolution/superes_comparison_current_final/models/sr_block_2x_flexible.onnx'
+onnx_model_path = '/mnt/c/Users/13144/Documents/Masters_Thesis/super_resolution/superes_comparison_current_final/models/wavemixsrv2_srblock_2x_fullflex.onnx'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 hr_dir = os.path.join(dataset_dir, 'original')
