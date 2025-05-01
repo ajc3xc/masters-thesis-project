@@ -35,7 +35,7 @@ if hasattr(model, "path2") and isinstance(model.path2, nn.Upsample):
     model.path2 = SafeInterp(mode="bicubic")
 
 # Load weights
-state_dict = torch.load("models/WaveMixSR/saved_model_weights/bsd100_2x_y_df2k_33.2.pth", map_location=device)
+state_dict = torch.load("models/WaveMixSR/saved_model_weights/bsd100_2x_y_df2k_33.2.pth", map_location=device, weights_only=True)
 model.load_state_dict(state_dict, strict=False)
 model.eval()
 
