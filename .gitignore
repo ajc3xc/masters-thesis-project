@@ -1,4 +1,4 @@
-models/
+sr_models/
 *.out
 checkpoints/
 data/

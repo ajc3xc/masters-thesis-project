@@ -13,8 +13,8 @@ import argparse
 from argparse import Namespace
 from pathlib import Path
 
-#os.chdir(Path(__file__).resolve().parent)
-os.chdir("/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project")
+os.chdir(Path(__file__).resolve().parent)
+#os.chdir("")
 
 # ─── Third-party libraries ────────────────────────────────────────────────
 import numpy as np
