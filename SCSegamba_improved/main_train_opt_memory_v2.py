@@ -13,13 +13,16 @@ import argparse
 from argparse import Namespace
 from pathlib import Path
 
+#os.chdir(Path(__file__).resolve().parent)
+os.chdir("/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project")
+
 # ─── Third-party libraries ────────────────────────────────────────────────
 import numpy as np
 from sklearn.metrics import f1_score, jaccard_score
 import torch
 import torch.backends.cudnn as cudnn
-from torch.amp import GradScaler, autocast
-from torch.serialization import add_safe_globals
+from torch.cuda.amp import GradScaler, autocast
+#from torch.serialization import add_safe_globals
 from tqdm import tqdm
 import cv2
 from mmengine.optim.scheduler.lr_scheduler import PolyLR
@@ -30,7 +33,7 @@ from models import build_model
 from engine import train_one_epoch
 from eval.evaluate import eval
 from util.logger import get_logger
-add_safe_globals([argparse.Namespace, np.core.multiarray.scalar, np.dtype, _codecs.encode])
+#add_safe_globals([argparse.Namespace, np.core.multiarray.scalar, np.dtype, _codecs.encode])
 
 DATASET_LIST = [
     {
@@ -118,11 +121,12 @@ def train_on_dataset(dataset_cfg, args):
     # === Build model and optimizer ===
     model, criterion = build_model(args)
     model.to(device)
-    try:
-        model = torch.compile(model)
-        print("[✓] Model compiled successfully with torch.compile!")
-    except Exception as e:
-        print(f"[!] torch.compile not available or failed: {e}")
+    #try:
+    #    model = torch.compile(model)
+    #    print("[✓] Model compiled successfully with torch.compile!")
+    #except Exception as e:
+    #    print(f"[!] torch.compile not available or failed: {e}")
+
     scaler = GradScaler()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     scheduler = PolyLR(optimizer, eta_min=args.min_lr, begin=args.start_epoch, end=args.epochs)
@@ -249,12 +253,37 @@ def train_on_dataset(dataset_cfg, args):
 
     # === ONNX Export ===
     checkpoint = torch.load(checkpoint_file, weights_only=False)
-    model.load_state_dict(checkpoint["model"])
+    #model.load_state_dict(checkpoint["model"])
+    def load_partial_state_dict(model, ckpt_state_dict, remap_fn=None):
+        """
+        Load only those entries from ckpt_state_dict that match model’s keys and shapes.
+        Optionally remap keys first via remap_fn(dict) -> dict.
+        Returns the NamedTuple (missing_keys, unexpected_keys).
+        """
+        # 1) remap if needed
+        if remap_fn is not None:
+            ckpt_state_dict = remap_fn(ckpt_state_dict)
+
+        # 2) grab the model’s own state dict
+        model_dict = model.state_dict()
+
+        # 3) filter: keep only keys that both exist in model_dict and have the same shape
+        filtered = {
+            k: v
+            for k, v in ckpt_state_dict.items()
+            if k in model_dict and model_dict[k].shape == v.shape
+        }
+
+        # 4) load with strict=False
+        result = model.load_state_dict(filtered, strict=False)
+        return result
+
+    _ = load_partial_state_dict(model, checkpoint["model"], remap_fn=remap_gbc_to_attention_keys)
     model.eval()
-    #prevent weird cuda errors?
-    model = model.cpu()
-    #dummy_input = torch.randn(1, 3, args.input_size, args.input_size).to(device)
-    dummy_input = torch.randn(1, 1, args.input_size, args.input_size).to(device)
+
+    # Make sure model and input are on CUDA (since mamba_ssm needs it)
+    model = model.cuda()
+    dummy_input = torch.randn(1, 1, args.input_size, args.input_size).cuda()
     class ModelWrapper(torch.nn.Module):
         def __init__(self, model):
             super().__init__()
@@ -262,14 +291,17 @@ def train_on_dataset(dataset_cfg, args):
 
         def forward(self, x):
             #if x.shape[1] == 1:
-            #    x = x.repeat(-1, 3, -1, -1)  # (B,1,H,W) → (B,3,H,W)
-            expanded = x.expand(-1, 3, -1, -1)
-            is_single_channel = (x.shape[1] == 1)
-            if isinstance(is_single_channel_tensor, bool):
-                is_single_channel_tensor = torch.full((1, 1, 1, 1), is_single_channel_tensor, dtype=torch.bool, device=x.device)
-            else:
-                is_single_channel_tensor = is_single_channel_tensor.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
-            x = torch.where(is_single_channel_tensor, expanded, x)
+            #    x = x.expand(-1, 3, -1, -1)  # Convert grayscale to 3-channel
+            
+            #is_single_channel = (x.shape[1] == 1)
+            # Always expand — ONNX prefers static ops — and blend the results
+            #x_expanded = x.expand(-1, 3, -1, -1)
+            # Dynamically choose either original or expanded based on condition
+            #x = torch.where(is_single_channel, x_expanded, x)
+            B, C, H, W = x.shape
+            needs_expand = (C == 1)
+            expand_tensor = torch.ones(3, device=x.device, dtype=torch.bool)[None, :, None, None]
+            x = x.expand(B, 3, H, W) if needs_expand else x
             return self.model(x)
 
     model_to_export = ModelWrapper(model)
