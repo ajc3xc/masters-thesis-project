@@ -1,30 +1,66 @@
-# models/sebica.py
-
 '''
-Author: Adam Camerer via ChatGPT
+Author: Hui Liu
+Github: https://github.com/Karl1109
+Email: liuhui@ieee.org
 '''
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from torch import nn
+from mmcls.SAVSS_dev.models.SAVSS.SAVSS import SAVSS
+from models.MFS import MFS
 
-class SEBICA(nn.Module):
-    def __init__(self, in_channels):
-        super(SEBICA, self).__init__()
-        self.channel_reduce = nn.Conv1d(in_channels, in_channels, kernel_size=1, bias=False)
-        self.spatial_att = nn.Conv2d(2, 1, kernel_size=7, padding=3, bias=False)
-        self.sigmoid = nn.Sigmoid()
+class Decoder(nn.Module):
+    def __init__(self, backbone, args=None):
+        super().__init__()
+        self.args = args
+        self.backbone = backbone
+        #self.MFS = MFS(8)
+        self.MFS = MFS(8, attention_type=args.attention_type)
 
-    def forward(self, x):
-        b, c, h, w = x.size()
-        # Channel Attention
-        x_perm = x.flatten(2)                  # [B, C, H*W]
-        channel_att = self.channel_reduce(x_perm).mean(-1).view(b, c, 1, 1)
-        x = x * self.sigmoid(channel_att)
+    def forward(self, samples):
+        outs_SAVSS = self.backbone(samples)
+        out = self.MFS(outs_SAVSS)
 
-        # Spatial Attention
-        avg_out = x.mean(dim=1, keepdim=True)
-        max_out, _ = x.max(dim=1, keepdim=True)
-        spatial_att = self.sigmoid(self.spatial_att(torch.cat([avg_out, max_out], dim=1)))
-        x = x * spatial_att
-        return x
+        return out
+
+class DiceLoss(nn.Module):
+    def __init__(self, smooth=1., dims=(-2, -1)):
+        super(DiceLoss, self).__init__()
+        self.smooth = smooth
+        self.dims = dims
+
+    def forward(self, x, y):
+        tp = (x * y).sum(self.dims)
+        fp = (x * (1 - y)).sum(self.dims)
+        fn = ((1 - x) * y).sum(self.dims)
+        dc = (2 * tp + self.smooth) / (2 * tp + fp + fn + self.smooth)
+        dc = dc.mean()
+
+        return 1 - dc
+
+class bce_dice(nn.Module):
+    def __init__(self, args):
+        super(bce_dice, self).__init__()
+        self.bce_fn = nn.BCEWithLogitsLoss()
+        self.dice_fn = DiceLoss()
+        self.args = args
+
+    def forward(self, y_pred, y_true):
+        bce = self.bce_fn(y_pred, y_true)
+        dice = self.dice_fn(y_pred.sigmoid(), y_true)
+        return self.args.BCELoss_ratio * bce + self.args.DiceLoss_ratio * dice
+
+def build(args):
+    device = torch.device(args.device)
+    args.device = torch.device(args.device)
+
+    backbone = SAVSS(arch='Crack',
+                     out_indices=(0, 1, 2, 3),
+                     drop_path_rate=0.2,
+                     final_norm=True,
+                     convert_syncbn=True)
+    model = Decoder(backbone, args)
+    criterion = bce_dice(args)
+    criterion.to(device)
+
+    return model, criterion
