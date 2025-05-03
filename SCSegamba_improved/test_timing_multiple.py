@@ -25,7 +25,7 @@ RESULTS_DIR = "results_eval"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 csv_base_name = "eval_results"
 csv_path = os.path.join(RESULTS_DIR, f"{csv_base_name}.csv")
-counter = 1_{MAX_ITERS}
+counter = 1
 while os.path.exists(csv_path):
     csv_path = os.path.join(RESULTS_DIR, f"{csv_base_name}_{counter}.csv")
     counter += 1
