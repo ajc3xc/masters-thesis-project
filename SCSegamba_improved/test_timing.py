@@ -62,7 +62,8 @@ def eval_from_memory(pred_list, gt_list):
 
 if __name__ == '__main__':
     args.batch_size = 10
-    args.attention_type= 'gbc'
+    args.attention_type = 'gbc'
+    args.fusion_mode = 'original'
     t_all = []
     device = torch.device(args.device)
     print(device)
