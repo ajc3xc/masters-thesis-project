@@ -84,7 +84,7 @@ print(f'iterated to limit to {MAX_ITERS}')
 # 🔁 Evaluate each checkpoint
 for ckpt_path in CHECKPOINTS:
     ckpt_lower = ckpt_path.lower()
-    model_name = os.path.splitext(os.path.basename(ckpt_path))[0]
+    base_name = os.path.splitext(os.path.basename(ckpt_path))[0]
 
     # Infer fusion + attention type
     if "scsegamba/" in ckpt_lower:
@@ -106,6 +106,9 @@ for ckpt_path in CHECKPOINTS:
     elif args.fusion_mode != "original":
         args.attention_type = "gbc"
 
+    fusion_str = args.fusion_mode or "unknownfusion"
+    attn_str = args.attention_type or "noattn"
+    model_name = f"{base_name}_F-{fusion_str}_A-{attn_str}"
     print(f"\n🔍 Evaluating {model_name} | Fusion: {args.fusion_mode} | Attention: {args.attention_type}")
     #continue
 
