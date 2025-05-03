@@ -62,6 +62,7 @@ def eval_from_memory(pred_list, gt_list):
 
 if __name__ == '__main__':
     args.batch_size = 10
+    args.attention_type= 'gbc'
     t_all = []
     device = torch.device(args.device)
     print(device)
@@ -114,7 +115,6 @@ if __name__ == '__main__':
             #root_name = data["A_paths"][0].split("/")[-1][0:-4]
             target = 255 * (target / np.max(target))
             out = 255 * (out / np.max(out))
-            print(target.shape, out.shape)
 
             # out[out >= 0.5] = 255
             # out[out < 0.5] = 0
