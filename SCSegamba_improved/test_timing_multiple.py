@@ -59,15 +59,22 @@ args.phase = 'test'
 args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test'
 args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test'
 #args.serial_batches = True
-args.batch_size = 10
+args.batch_size = 1
 #args.num_threads = 12
+device = torch.device(args.device)
 
 # 💽 Create consistent DataLoader
 print('creating dataset')
 test_dl = create_dataset(args)
 print('dataset created')
-test_subset = [next(test_iter) for _ in range(MAX_ITERS)]
-print('iterated to limit to 100')
+test_iter = iter(test_dl)
+test_subset = []
+for i in range(MAX_ITERS):
+    batch = next(test_iter)
+    test_subset.append(batch)
+    print(i, end="", flush=True)  # Print dot without newline
+print()
+print(f'iterated to limit to {MAX_ITERS}')
 
 # 📝 Open CSV and write header
 #with open(csv_path, mode='w', newline='') as f:
@@ -106,7 +113,7 @@ for ckpt_path in CHECKPOINTS:
     model, _ = build_model(args)
     #state_dict = torch.load(ckpt_path, map_location='cuda')
     #model.load_state_dict(state_dict["model"], strict=False)
-    state_dict = torch.load(load_model_file, weights_only=False)
+    state_dict = torch.load(ckpt_path, weights_only=False)
     model.load_state_dict(state_dict["model"], strict=False)
     torch.backends.cudnn.benchmark = True
     model.to(device)
@@ -117,7 +124,7 @@ for ckpt_path in CHECKPOINTS:
     with torch.no_grad():
         model.eval()
         for data in test_subset:
-            print(".")
+            #print(".")
             x = data["image"].cuda(non_blocking=True)
             target = data["label"].cuda(non_blocking=True).long()
 
@@ -128,12 +135,21 @@ for ckpt_path in CHECKPOINTS:
             end = time.time()
             total_infer_time += end - start
 
-            pred = out[0, 0].cpu().numpy()
-            gt = target[0, 0].cpu().numpy()
-            target = 255 * (target / np.max(target))
-            out = 255 * (out / np.max(out))
-            pred_list.append(pred)
-            gt_list.append(gt)
+            target = target[0, 0, ...].cpu().numpy()
+            out = out[0, 0, ...].cpu().numpy()
+            #target = 255 * (target / np.max(target))
+            #out = 255 * (out / np.max(out))
+            if np.max(target) > 0:
+                target = (255 * (target / np.max(target))).astype(np.uint8)
+            else:
+                target = np.zeros_like(target, dtype=np.uint8)
+
+            if np.max(out) > 0:
+                out = (255 * (out / np.max(out))).astype(np.uint8)
+            else:
+                out = np.zeros_like(out, dtype=np.uint8)
+            pred_list.append(target)
+            gt_list.append(out)
 
     print("evaluating metrics")
     metrics = eval_from_memory(pred_list, gt_list)
