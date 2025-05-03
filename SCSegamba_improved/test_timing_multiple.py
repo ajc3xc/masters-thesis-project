@@ -124,6 +124,12 @@ for ckpt_path in CHECKPOINTS:
     torch.backends.cudnn.benchmark = True
     model.to(device)
 
+    print("warming up gpu")
+    for _ in range(5):
+        _ = model(torch.randn(1, 1, H, W).cuda())
+    torch.cuda.synchronize()
+    print("gpu warmed up")
+
     pred_list, gt_list = [], []
     total_infer_time = 0.0
 
@@ -154,8 +160,8 @@ for ckpt_path in CHECKPOINTS:
                 out = (255 * (out / np.max(out))).astype(np.uint8)
             else:
                 out = np.zeros_like(out, dtype=np.uint8)
-            pred_list.append(target)
-            gt_list.append(out)
+            pred_list.append(out)
+            gt_list.append(target)
 
     print("evaluating metrics")
     metrics = eval_from_memory(pred_list, gt_list)
