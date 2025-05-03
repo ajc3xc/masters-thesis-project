@@ -13,10 +13,10 @@ from main import get_args_parser
 CHECKPOINTS = [
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/weights/2025_04_23_11:38:23_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_04_27_11:33:22_Dataset->Crack_Conglomerate/checkpoint_best.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_04_24_17:38:27_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_04_24_07:02:45_Dataset->Crack_Conglomerate/checkpoint_best.pth",
 ]
 
 # 🔧 Settings
