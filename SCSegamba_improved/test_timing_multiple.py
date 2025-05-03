@@ -13,16 +13,19 @@ from main import get_args_parser
 CHECKPOINTS = [
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/weights/2025_04_23_11:38:23_Dataset->Crack_Conglomerate/checkpoint_best.pth",
-    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_04_24_04:52:32_Dataset->Crack_Conglomerate/checkpoint_best.pth",
 ]
 
 # 🔧 Settings
-MAX_ITERS = 50
+MAX_ITERS = 100
 RESULTS_DIR = "results_eval"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 csv_base_name = "eval_results"
 csv_path = os.path.join(RESULTS_DIR, f"{csv_base_name}.csv")
-counter = 1
+counter = 1_{MAX_ITERS}
 while os.path.exists(csv_path):
     csv_path = os.path.join(RESULTS_DIR, f"{csv_base_name}_{counter}.csv")
     counter += 1
@@ -72,7 +75,7 @@ test_subset = []
 for i in range(MAX_ITERS):
     batch = next(test_iter)
     test_subset.append(batch)
-    print(i, end="", flush=True)  # Print dot without newline
+    print(f"{i}.", end="", flush=True)  # Print dot without newline
 print()
 print(f'iterated to limit to {MAX_ITERS}')
 
