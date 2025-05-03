@@ -47,8 +47,9 @@ class ECABlock(nn.Module):
         return x * self.sigmoid(y)
 
 class GBC(nn.Module):
-    def __init__(self, in_channels, norm_type='GN'):
+    def __init__(self, in_channels, norm_type='GN', use_eca=False):
         super(GBC, self).__init__()
+        self.use_eca = use_eca
         # same blocks as before
         self.block1 = nn.Sequential(
             BottConv(in_channels, in_channels, in_channels//8, 3, 1, 1),
@@ -81,5 +82,6 @@ class GBC(nn.Module):
         x  = x1 * x2
         x  = self.block4(x)
         # **Add** this line to apply channel attention
-        x  = self.eca(x)
+        if self.use_eca:
+            x = self.eca(x)
         return x + residual

@@ -28,7 +28,7 @@ class WeightedFusion(nn.Module):
         return sum(f * w[i] for i, f in enumerate(features))
 
 class MFS(nn.Module):
-    def __init__(self, embedding_dim, attention_type='gbc-eca'):
+    def __init__(self, embedding_dim, attention_type=None):
         super(MFS, self).__init__()
         self.embedding_dim = embedding_dim
 
@@ -54,8 +54,9 @@ class MFS(nn.Module):
         elif attention_type == 'sebica':
             self.attention = SEBICA(embedding_dim)
         elif attention_type == 'gbc_eca':
+            self.attention = GBC(embedding_dim, use_eca=True)
+        elif attention_type == 'gbc':
             self.attention = GBC(embedding_dim)
-            #self.GBC_C = self.attention  # alias for backward compatibility
         else:
             raise ValueError(f"Unsupported attention type: {attention_type}")
 
