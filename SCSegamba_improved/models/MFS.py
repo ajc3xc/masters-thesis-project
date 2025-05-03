@@ -34,6 +34,9 @@ class MFS(nn.Module):
         self.DySample_C_4 = DySample(embedding_dim, scale=4)
         self.DySample_C_2 = DySample(embedding_dim, scale=2)
 
+        self.GBC_8 = GBC(8, norm_type='IN')
+        self.GN_C = nn.GroupNorm(num_channels=embedding_dim * 4, num_groups=max(1, embedding_dim * 4 // 16))
+
         if fusion_mode == 'original':
             self.use_original = True
             self.GBC_C = GBC(embedding_dim * 4, use_eca=True)

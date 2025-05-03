@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     #add_safe_globals([argparse.Namespace])
     state_dict = torch.load(load_model_file, weights_only=False)
-    model.load_state_dict(state_dict["model"])
+    model.load_state_dict(state_dict["model"], strict=False)
     #model = torch.compile(model)
     torch.backends.cudnn.benchmark = True
     model.to(device)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
             target = data["label"]
             #if device != 'cpu':
             #    print('using cuda')
-            x, target = x.cuda(), target.to(dtype=torch.int64).cuda()
+            x, target = x.cuda(non_blocking=True), target.cuda(non_blocking=True).long()
 
             start = time.time()
             out = model(x)

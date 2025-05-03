@@ -15,7 +15,7 @@ class Decoder(nn.Module):
         self.args = args
         self.backbone = backbone
         #self.MFS = MFS(8)
-        self.MFS = MFS(8, attention_type=args.attention_type)
+        self.MFS = MFS(8, fusion_mode=args.fusion_mode, attention_type=args.attention_type)
 
     def forward(self, samples):
         outs_SAVSS = self.backbone(samples)
