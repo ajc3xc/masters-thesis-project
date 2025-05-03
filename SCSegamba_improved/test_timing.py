@@ -12,13 +12,19 @@ import cv2
 from datasets import create_dataset
 from models import build_model
 from main import get_args_parser
+import time
+
+#from torch.cuda.amp import autocast
 
 from eval.evaluate import cal_prf_metrics, cal_mIoU_metrics, cal_ODS_metrics, cal_OIS_metrics
 
 parser = argparse.ArgumentParser('SCSEGAMBA FOR CRACK', parents=[get_args_parser()])
 args = parser.parse_args()
 args.phase = 'test'
-args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/data/TUT'
+#args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/data/TUT'
+args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test'
+
+
 
 def eval_from_memory(pred_list, gt_list):
     """
@@ -55,7 +61,7 @@ def eval_from_memory(pred_list, gt_list):
     }
 
 if __name__ == '__main__':
-    args.batch_size = 1
+    args.batch_size = 10
     t_all = []
     device = torch.device(args.device)
     print(device)
@@ -70,31 +76,45 @@ if __name__ == '__main__':
     #add_safe_globals([argparse.Namespace])
     state_dict = torch.load(load_model_file, weights_only=False)
     model.load_state_dict(state_dict["model"])
+    #model = torch.compile(model)
+    torch.backends.cudnn.benchmark = True
     model.to(device)
     print("Load Model Successful!")
     suffix = load_model_file.split('/')[-2]
     save_root = "./results/results_test/" + suffix
     if not os.path.isdir(save_root):
         os.makedirs(save_root)
+    
+    max_iters = 50
     with torch.no_grad():
         model.eval()
 
         pred_list = []
         gt_list = []
+        total_infer_time = 0.0
+        torch.cuda.synchronize()
         for batch_idx, (data) in enumerate(test_dl):
-            print(batch_idx)
+            if max_iters is not None and batch_idx * args.batch_size >= max_iters:
+                break
+            print(f"{(batch_idx*args.batch_size)+1}-{(batch_idx+1)*args.batch_size}")
             x = data["image"]
             target = data["label"]
-            if device != 'cpu':
-                print('using cuda')
-                x, target = x.cuda(), target.to(dtype=torch.int64).cuda()
+            #if device != 'cpu':
+            #    print('using cuda')
+            x, target = x.cuda(), target.to(dtype=torch.int64).cuda()
+
+            start = time.time()
             out = model(x)
+            torch.cuda.synchronize()
+            end = time.time()
+            total_infer_time += end - start
 
             target = target[0, 0, ...].cpu().numpy()
             out = out[0, 0, ...].cpu().numpy()
-            root_name = data["A_paths"][0].split("/")[-1][0:-4]
+            #root_name = data["A_paths"][0].split("/")[-1][0:-4]
             target = 255 * (target / np.max(target))
             out = 255 * (out / np.max(out))
+            print(target.shape, out.shape)
 
             # out[out >= 0.5] = 255
             # out[out < 0.5] = 0
@@ -102,9 +122,11 @@ if __name__ == '__main__':
             pred_list.append(target)
             gt_list.append(out)
 
+        fps = len(test_dl) / total_infer_time
         metrics = eval_from_memory(pred_list, gt_list)
-        #metrics["FPS"] = fps
+        metrics["FPS"] = fps
         #print(f"🧪 Model: {model_name}")
+        print(f'FPS: {fps}')
         print(f"  mIoU : {metrics['mIoU']:.4f}")
         print(f"  ODS  : {metrics['ODS']:.4f}")
         print(f"  OIS  : {metrics['OIS']:.4f}")
@@ -119,8 +141,4 @@ if __name__ == '__main__':
             #print('----------------------------------------------------------------------------------------------')
             #cv2.imwrite(os.path.join(save_root, "{}_lab.png".format(root_name)), target)
             #cv2.imwrite(os.path.join(save_root, "{}_pre.png".format(root_name)), out)
-
-        
-        
-
     print("Finished!")
