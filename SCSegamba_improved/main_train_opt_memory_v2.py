@@ -225,16 +225,16 @@ def train_on_dataset(dataset_cfg, args):
                 target_np = target[0, 0].cpu().numpy()
 
                 # Save only in the last epoch
-                if epoch == args.epochs - 1:
-                    out_img = (255 * (out_np / out_np.max())).astype(np.uint8)
-                    target_img = (255 * (target_np / target_np.max())).astype(np.uint8) if target_np.max() > 0 else np.zeros_like(target_np, dtype=np.uint8)
+                #if epoch == args.epochs - 1:
+                #    out_img = (255 * (out_np / out_np.max())).astype(np.uint8)
+                #    target_img = (255 * (target_np / target_np.max())).astype(np.uint8) if target_np.max() > 0 else np.zeros_like(target_np, dtype=np.uint8)
                     
-                    name = Path(batch["A_paths"][0]).stem
-                    final_output_dir = results_root / "final_outputs"
-                    final_output_dir.mkdir(parents=True, exist_ok=True)
+                #    name = Path(batch["A_paths"][0]).stem
+                #    final_output_dir = results_root / "final_outputs"
+                #    final_output_dir.mkdir(parents=True, exist_ok=True)
 
-                    cv2.imwrite(str(final_output_dir / f"{name}_pre.png"), out_img)
-                    cv2.imwrite(str(final_output_dir / f"{name}_lab.png"), target_img)
+                    #cv2.imwrite(str(final_output_dir / f"{name}_pre.png"), out_img)
+                    #cv2.imwrite(str(final_output_dir / f"{name}_lab.png"), target_img)
 
                 # Still needed for in-memory evaluation
                 all_preds.append((out_np > 0.5).astype(np.uint8))
@@ -285,6 +285,8 @@ def train_on_dataset(dataset_cfg, args):
 
     _ = load_partial_state_dict(model, checkpoint["model"], remap_fn=remap_gbc_to_attention_keys)
     model.eval()
+
+    return
 
     # Make sure model and input are on CUDA (since mamba_ssm needs it)
     model = model.cuda()
