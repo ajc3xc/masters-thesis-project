@@ -120,8 +120,8 @@ if __name__ == '__main__':
             # out[out >= 0.5] = 255
             # out[out < 0.5] = 0
 
-            pred_list.append(target)
-            gt_list.append(out)
+            pred_list.append(out)
+            gt_list.append(target)
 
         fps = len(test_dl) / total_infer_time
         metrics = eval_from_memory(pred_list, gt_list)

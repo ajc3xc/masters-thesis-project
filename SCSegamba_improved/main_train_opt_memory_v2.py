@@ -37,10 +37,15 @@ from util.logger import get_logger
 
 DATASET_LIST = [
     {
-        "name": "Crack_Conglomerate",
-        "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Train",
-        "test":  "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test",
-    }
+        "name": "TUT",
+        "train": "",
+        "test": "",
+    },
+    #{
+    #    "name": "Crack_Conglomerate",
+    #    "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Train",
+    #    "test":  "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test",
+    #}
 ]
 
 def get_args_parser():
@@ -55,7 +60,7 @@ def get_args_parser():
     parser.add_argument('--min_lr', default=1e-6, type=float)
     parser.add_argument('--weight_decay', default=0.01, type=float)
     parser.add_argument('--epochs', default=50, type=int)
-    parser.add_argument('--attention_type', default='gbc_eca', choices=['gbc_eca','eca','sfa','sebica'], help="MFS block attention module", type=str)
+    parser.add_argument('--attention_type', default='gbc', choices=['gbc', 'gbc_eca','eca','sfa','sebica'], help="MFS block attention module", type=str)
     parser.add_argument('--start_epoch', default=0, type=int)
     parser.add_argument('--lr_drop', default=30, type=int)
     parser.add_argument('--sgd', action='store_true')
@@ -65,7 +70,7 @@ def get_args_parser():
     parser.add_argument('--serial_batches', action='store_true')
     parser.add_argument('--num_threads', default=8, type=int)
     parser.add_argument('--input_size', default=512, type=int)
-    parser.add_argument('--use_dynamic_fusion', action='store_true', help="Choose dynamic instead of static fusion")
+    parser.add_argument('--fusion_mode', default=None, choices=['original', 'dynamic', 'weighted'])
     return parser
 
 def evaluate_segmentation(preds, labels):

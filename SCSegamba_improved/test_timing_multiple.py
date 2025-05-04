@@ -20,7 +20,7 @@ CHECKPOINTS = [
 ]
 
 # 🔧 Settings
-MAX_ITERS = 100
+MAX_ITERS = 1200
 RESULTS_DIR = "results_eval"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 csv_base_name = "eval_results"
@@ -72,7 +72,10 @@ test_dl = create_dataset(args)
 print('dataset created')
 test_iter = iter(test_dl)
 test_subset = []
-for i in range(MAX_ITERS):
+#print(len(test_dl))
+#import sys
+#sys.exit()
+for i in range(len(test_dl)):
     batch = next(test_iter)
     test_subset.append(batch)
     print(f"{i}.", end="", flush=True)  # Print dot without newline
@@ -126,7 +129,7 @@ for ckpt_path in CHECKPOINTS:
 
     print("warming up gpu")
     for _ in range(5):
-        _ = model(torch.randn(1, 1, H, W).cuda())
+        _ = model(torch.randn(1, 3, args.load_width, args.load_height).cuda())
     torch.cuda.synchronize()
     print("gpu warmed up")
 
