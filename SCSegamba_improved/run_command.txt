@@ -1,0 +1,17 @@
+gbc original:
+sbatch --account=general --partition=gpu --time=18:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=32G --output=logs/gbc_original_train_%j.out --wrap="echo 'Running original gbc'; cd ~/projects/masters_thesis && pixi run -e scsegamba -- python /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/main_train_opt_memory_v2.py --fusion_mode=original --batch_size_train=14 --batch_size_test=14 --num_threads=16"
+
+gbc dynamic
+sbatch --account=general --partition=gpu --time=20:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=32G --output=logs/gbc_dynamic_train_%j.out --wrap="echo 'Running dynamic gbc'; cd ~/projects/masters_thesis && pixi run -e scsegamba -- python /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/main_train_opt_memory_v2.py --fusion_mode=dynamic --attention_type=gbc --batch_size_train=14 --batch_size_test=14 --num_threads=16"
+
+gbc_eca dynamic:
+sbatch --account=general --partition=gpu --time=20:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=32G --output=logs/gbc_eca_dynamic_train_%j.out --wrap="echo 'Running dynamic gbc_eca'; cd ~/projects/masters_thesis && pixi run -e scsegamba -- python /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/main_train_opt_memory_v2.py --fusion_mode=dynamic --attention_type=gbc_eca --batch_size_train=14 --batch_size_test=14 --num_threads=16"
+
+eca dynamic:
+sbatch --account=general --partition=gpu --time=20:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=32G --output=logs/eca_dynamic_train_%j.out --wrap="echo 'Running dynamic eca'; cd ~/projects/masters_thesis && pixi run -e scsegamba -- python /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/main_train_opt_memory_v2.py --fusion_mode=dynamic --attention_type=eca --batch_size_train=14 --batch_size_test=14 --num_threads=16"
+
+sebica dynamic:
+sbatch --account=general --partition=gpu --time=20:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=32G --output=logs/sebica_dynamic_train_%j.out --wrap="echo 'Running dynamic sebica'; cd ~/projects/masters_thesis && pixi run -e scsegamba -- python /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/main_train_opt_memory_v2.py --fusion_mode=dynamic --attention_type=sebica --batch_size_train=14 --batch_size_test=14 --num_threads=16"
+
+sfa dynamic:
+sbatch --account=general --partition=gpu --time=20:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=32G --output=logs/sfa_dynamic_train_%j.out --wrap="echo 'Running dynamic sfa'; cd ~/projects/masters_thesis && pixi run -e scsegamba -- python /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/main_train_opt_memory_v2.py --fusion_mode=dynamic --attention_type=sfa --batch_size_train=14 --batch_size_test=14 --num_threads=16"

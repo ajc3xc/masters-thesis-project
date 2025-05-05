@@ -42,7 +42,16 @@ class CrackDataset(BaseDataset):
         """
         # read a image given a random integer index
         img_path = self.img_paths[index]
-        lab_path = os.path.join(self.lab_dir, os.path.basename(img_path).split('.')[0] + '.jpg')
+
+        base_name = os.path.basename(img_path).split('.')[0]
+        lab_path_jpg = os.path.join(self.lab_dir, base_name + '.jpg')
+        lab_path_png = os.path.join(self.lab_dir, base_name + '.png')
+
+        if os.path.exists(lab_path_jpg):
+            lab_path = lab_path_jpg
+        elif os.path.exists(lab_path_png):
+            lab_path = lab_path_png
+        #lab_path = os.path.join(self.lab_dir, os.path.basename(img_path).split('.')[0] + '.jpg')
 
         #img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
         img = cv2.imread(img_path, cv2.IMREAD_COLOR)
@@ -56,7 +65,10 @@ class CrackDataset(BaseDataset):
 
         # adjust the image size
         #w, h = self.args.input_size, self.args.input_size
-        w, h = self.args.load_width, self.args.load_height
+        try:
+            w, h = self.args.load_width, self.args.load_height
+        except:
+            w,h = self.args.input_size, self.args.input_size
         if w > 0 or h > 0:
             img = cv2.resize(img, (w, h), interpolation=cv2.INTER_CUBIC)
             lab = cv2.resize(lab, (w, h), interpolation=cv2.INTER_CUBIC)

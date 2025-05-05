@@ -31,7 +31,7 @@ from mmengine.optim.scheduler.lr_scheduler import PolyLR
 from datasets import create_dataset
 from models import build_model
 from engine import train_one_epoch
-from eval.evaluate import eval
+from eval.evaluate import eval_from_memory
 from util.logger import get_logger
 #add_safe_globals([argparse.Namespace, np.core.multiarray.scalar, np.dtype, _codecs.encode])
 
@@ -43,8 +43,8 @@ DATASET_LIST = [
     },
     {
         "name": "TUT_Crack_Conglomerate",
-        "train": "",
-        "test": "",
+        "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/combined_dataset/TUT_Conglomerate_Concrete/train",
+        "test": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/combined_dataset/TUT_Conglomerate_Concrete/val",
     }
     #{
     #    "name": "Crack_Conglomerate",
@@ -58,8 +58,8 @@ def get_args_parser():
     parser.add_argument('--BCELoss_ratio', default=0.87, type=float)
     parser.add_argument('--DiceLoss_ratio', default=0.13, type=float)
     parser.add_argument('--Norm_Type', default='GN', type=str)
-    parser.add_argument('--batch_size_train', default=8, type=int)
-    parser.add_argument('--batch_size_test', default=8, type=int)
+    parser.add_argument('--batch_size_train', default=10, type=int)
+    parser.add_argument('--batch_size_test', default=10, type=int)
     parser.add_argument('--lr_scheduler', default='PolyLR', type=str)
     parser.add_argument('--lr', default=5e-4, type=float)
     parser.add_argument('--min_lr', default=1e-6, type=float)
@@ -73,7 +73,7 @@ def get_args_parser():
     parser.add_argument('--device', default='cuda', type=str)
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--serial_batches', action='store_true')
-    parser.add_argument('--num_threads', default=8, type=int)
+    parser.add_argument('--num_threads', default=10, type=int)
     parser.add_argument('--input_size', default=512, type=int)
     parser.add_argument('--fusion_mode', default=None, choices=['original', 'dynamic', 'weighted'])
     return parser
@@ -91,7 +91,7 @@ def train_on_dataset(dataset_cfg, args):
     dataset_name = dataset_cfg['name']
     onnx_dir = Path("onnx_exports")
     onnx_dir.mkdir(exist_ok=True)
-    onnx_file = onnx_dir / f"{dataset_name}_{args.attention_type}_best.onnx"
+    onnx_file = onnx_dir / f"{dataset_name}_{args.fusion_mode}_{args.attention_type}_best.onnx"
     if onnx_file.exists():
         print(f"[✓] Skipping {dataset_name} (ONNX already exists)")
         return
@@ -100,17 +100,17 @@ def train_on_dataset(dataset_cfg, args):
     base_path = Path(args.output_dir) / args.attention_type
     results_base = Path("results") / args.attention_type
 
-    existing = sorted(glob.glob(str(base_path / f"*Dataset->{dataset_name}")), reverse=True)
+    existing = sorted(glob.glob(str(base_path / f"*Dataset->{dataset_name}_{args.fusion_mode}")), reverse=True)
     if existing and getattr(args, 'resume', True):
         process_folder = Path(existing[0])
         cur_time = process_folder.name.split('_')[0]
         print(f"[✓] Resuming from: {process_folder}")
     else:
         cur_time = time.strftime('%Y_%m_%d_%H:%M:%S', time.localtime())
-        process_folder = base_path / f"{cur_time}_Dataset->{dataset_name}"
+        process_folder = base_path / f"{cur_time}_Dataset->{dataset_name}_{args.fusion_mode}"
         process_folder.mkdir(parents=True, exist_ok=True)
 
-    results_root = results_base / f"{cur_time}_Dataset->{dataset_name}"
+    results_root = results_base / f"{cur_time}_Dataset->{dataset_name}_{args.fusion_mode}"
     results_root.mkdir(parents=True, exist_ok=True)
 
     checkpoint_file = process_folder / 'checkpoint_best.pth'
@@ -185,6 +185,7 @@ def train_on_dataset(dataset_cfg, args):
     args.dataset_path = dataset_cfg['train']
     args.batch_size = args.batch_size_train
     train_loader = create_dataset(args)
+    print(len(train_loader))
 
     # === Training Loop ===
     for epoch in range(args.start_epoch, args.epochs):
@@ -221,45 +222,47 @@ def train_on_dataset(dataset_cfg, args):
         model.eval()
 
         all_preds, all_labels = [], []
+        test_output_dir = results_root / "test_outputs"
+        test_output_dir.mkdir(parents=True, exist_ok=True)
+
         with torch.no_grad():
-            for batch in test_loader:
+            for i, batch in enumerate(test_loader):
                 x = batch["image"].to(device, non_blocking=True)
                 target = batch["label"].to(dtype=torch.int64, device=device)
-                out = model(x)
-                out_np = out[0, 0].cpu().numpy()
-                target_np = target[0, 0].cpu().numpy()
 
-                # Save only in the last epoch
-                #if epoch == args.epochs - 1:
-                #    out_img = (255 * (out_np / out_np.max())).astype(np.uint8)
-                #    target_img = (255 * (target_np / target_np.max())).astype(np.uint8) if target_np.max() > 0 else np.zeros_like(target_np, dtype=np.uint8)
-                    
-                #    name = Path(batch["A_paths"][0]).stem
-                #    final_output_dir = results_root / "final_outputs"
-                #    final_output_dir.mkdir(parents=True, exist_ok=True)
+                out = model(x)  # shape: (B, 1, H, W)
+                #pred_np = (out[:, 0].cpu().numpy() > 0.5).astype(np.uint8)
+                #label_np = (target[:, 0].cpu().numpy() > 0.5).astype(np.uint8)
+                pred_np = ((out[:, 0].cpu().numpy() > 0.5) * 255).astype(np.uint8)
+                label_np = ((target[:, 0].cpu().numpy() > 0.5) * 255).astype(np.uint8)
 
-                    #cv2.imwrite(str(final_output_dir / f"{name}_pre.png"), out_img)
-                    #cv2.imwrite(str(final_output_dir / f"{name}_lab.png"), target_img)
+                all_preds.append(pred_np)
+                all_labels.append(label_np)
 
-                # Still needed for in-memory evaluation
-                all_preds.append((out_np > 0.5).astype(np.uint8))
-                all_labels.append((target_np > 0.5).astype(np.uint8))
+                # Optional debug output — saves first few predictions
+                #if i <5:  # save only first 5 batches
+                #    for j in range(pred_np.shape[0]):
+                #        name = f"batch{i}_img{j}"
+                #        pred_img = (pred_np[j] * 255).astype(np.uint8)
+                #        label_img = (label_np[j] * 255).astype(np.uint8)
+                #        cv2.imwrite(str(test_output_dir / f"{name}_pred.png"), pred_img)
+                #        cv2.imwrite(str(test_output_dir / f"{name}_label.png"), label_img)
 
-        metrics = evaluate_segmentation(all_preds, all_labels)
-        print(f"[{dataset_name}] Epoch {epoch}: mIoU = {metrics['mIoU']:.4f}")
-        if metrics['mIoU'] > best_mIoU:
-            best_mIoU = metrics['mIoU']
-            #torch.save(model.state_dict(), checkpoint_file)
-            torch.save({
-                'model': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': scheduler.state_dict(),
-                'scaler': scaler.state_dict(),
-                'epoch': epoch,
-                'args': args,
-                'best_mIoU': best_mIoU
-            }, checkpoint_file)
-            log_train.info(f"New best model at epoch {epoch}: mIoU = {best_mIoU:.4f}")
+            metrics = eval_from_memory(all_preds, all_labels)
+            print(f"[{dataset_name}] Epoch {epoch}: mIoU = {metrics['mIoU']:.4f}")
+            if metrics['mIoU'] > best_mIoU:
+                best_mIoU = metrics['mIoU']
+                #torch.save(model.state_dict(), checkpoint_file)
+                torch.save({
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'lr_scheduler': scheduler.state_dict(),
+                    'scaler': scaler.state_dict(),
+                    'epoch': epoch,
+                    'args': args,
+                    'best_mIoU': best_mIoU
+                }, checkpoint_file)
+                log_train.info(f"New best model at epoch {epoch}: mIoU = {best_mIoU:.4f}")
 
     return
     
