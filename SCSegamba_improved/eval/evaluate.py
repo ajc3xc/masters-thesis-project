@@ -229,6 +229,31 @@ def eval(log_eval, results_dir, epoch):
 
     return {'epoch': epoch, 'mIoU': mIoU, 'ODS': ODS, 'OIS': OIS, 'F1': F_list[0], 'Precision': Precision_list[0], 'Recall': Recall_list[0]}
 
+# 🧠 Utility: evaluate in-memory
+def eval_from_memory(pred_list, gt_list):
+    assert len(pred_list) == len(gt_list), "Mismatched prediction and ground truth counts"
+
+    # Precision, Recall, F1 at 0.5 threshold
+    final_accuracy_all = cal_prf_metrics(pred_list, gt_list)
+    final_accuracy_all = np.array(final_accuracy_all)
+    Precision_list = final_accuracy_all[:, 1]
+    Recall_list = final_accuracy_all[:, 2]
+    F1_list = final_accuracy_all[:, 3]
+
+    # mIoU, ODS, OIS
+    mIoU = cal_mIoU_metrics(pred_list, gt_list)
+    ODS = cal_ODS_metrics(pred_list, gt_list)
+    OIS = cal_OIS_metrics(pred_list, gt_list)
+
+    return {
+        "mIoU": mIoU,
+        "ODS": ODS,
+        "OIS": OIS,
+        "F1": F1_list[0],
+        "Precision": Precision_list[0],
+        "Recall": Recall_list[0]
+    }
+
 if __name__ == '__main__':
     suffix_gt = "lab"
     suffix_pred = "pre"

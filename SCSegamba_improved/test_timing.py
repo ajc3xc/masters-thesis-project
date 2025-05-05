@@ -16,7 +16,7 @@ import time
 
 #from torch.cuda.amp import autocast
 
-from eval.evaluate import cal_prf_metrics, cal_mIoU_metrics, cal_ODS_metrics, cal_OIS_metrics
+from eval.evaluate import eval_from_memory
 
 parser = argparse.ArgumentParser('SCSEGAMBA FOR CRACK', parents=[get_args_parser()])
 args = parser.parse_args()
@@ -24,41 +24,6 @@ args.phase = 'test'
 #args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/data/TUT'
 args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test'
 
-
-
-def eval_from_memory(pred_list, gt_list):
-    """
-    In-memory version of `eval()` that evaluates model predictions without writing to disk.
-
-    Args:
-        pred_list (List[np.ndarray]): List of predicted masks (uint8, 0 or 255)
-        gt_list   (List[np.ndarray]): List of ground truth masks (uint8, 0 or 255)
-
-    Returns:
-        dict: Dictionary containing mIoU, ODS, OIS, F1, Precision, and Recall
-    """
-    assert len(pred_list) == len(gt_list), "Mismatched prediction and ground truth counts"
-
-    # Precision, Recall, F1 at 0.5 threshold
-    final_accuracy_all = cal_prf_metrics(pred_list, gt_list)
-    final_accuracy_all = np.array(final_accuracy_all)
-    Precision_list = final_accuracy_all[:, 1]
-    Recall_list = final_accuracy_all[:, 2]
-    F1_list = final_accuracy_all[:, 3]
-
-    # mIoU, ODS, OIS
-    mIoU = cal_mIoU_metrics(pred_list, gt_list)
-    ODS = cal_ODS_metrics(pred_list, gt_list)
-    OIS = cal_OIS_metrics(pred_list, gt_list)
-
-    return {
-        "mIoU": mIoU,
-        "ODS": ODS,
-        "OIS": OIS,
-        "F1": F1_list[0],
-        "Precision": Precision_list[0],
-        "Recall": Recall_list[0]
-    }
 
 if __name__ == '__main__':
     args.batch_size = 10
@@ -68,7 +33,8 @@ if __name__ == '__main__':
     device = torch.device(args.device)
     print(device)
     test_dl = create_dataset(args)
-    load_model_file = "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth"
+    #load_model_file = "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth"
+    load_model_file = "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/TUT/checkpoint_best.pth"
     data_size = len(test_dl)
     model, criterion = build_model(args)
     #state_dict = torch.load(load_model_file)
@@ -87,7 +53,7 @@ if __name__ == '__main__':
     if not os.path.isdir(save_root):
         os.makedirs(save_root)
     
-    max_iters = 50
+    max_iters = 100
     with torch.no_grad():
         model.eval()
 
@@ -105,6 +71,7 @@ if __name__ == '__main__':
             #    print('using cuda')
             x, target = x.cuda(non_blocking=True), target.cuda(non_blocking=True).long()
 
+            torch.cuda.synchronize()
             start = time.time()
             out = model(x)
             torch.cuda.synchronize()

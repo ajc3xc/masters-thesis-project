@@ -38,9 +38,14 @@ from util.logger import get_logger
 DATASET_LIST = [
     {
         "name": "TUT",
+        "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/TUT_dataset/TUT/train",
+        "test": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/TUT_dataset/TUT/test",
+    },
+    {
+        "name": "TUT_Crack_Conglomerate",
         "train": "",
         "test": "",
-    },
+    }
     #{
     #    "name": "Crack_Conglomerate",
     #    "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Train",
@@ -256,6 +261,8 @@ def train_on_dataset(dataset_cfg, args):
             }, checkpoint_file)
             log_train.info(f"New best model at epoch {epoch}: mIoU = {best_mIoU:.4f}")
 
+    return
+    
     # === ONNX Export ===
     checkpoint = torch.load(checkpoint_file, weights_only=False)
     #model.load_state_dict(checkpoint["model"])
@@ -285,8 +292,6 @@ def train_on_dataset(dataset_cfg, args):
 
     _ = load_partial_state_dict(model, checkpoint["model"], remap_fn=remap_gbc_to_attention_keys)
     model.eval()
-
-    return
 
     # Make sure model and input are on CUDA (since mamba_ssm needs it)
     model = model.cuda()

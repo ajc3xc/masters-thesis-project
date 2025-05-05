@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 from models import build_model
 from datasets import create_dataset
-from eval.evaluate import cal_prf_metrics, cal_mIoU_metrics, cal_ODS_metrics, cal_OIS_metrics
+from eval.evaluate import eval_from_memory
 from main import get_args_parser
 
 # 🔁 Your model checkpoint paths
@@ -19,8 +19,14 @@ CHECKPOINTS = [
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_04_24_07:02:45_Dataset->Crack_Conglomerate/checkpoint_best.pth",
 ]
 
+CHECKPOINTS = [
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/TUT/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/weights/2025_04_23_11:38:23_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+]
+
 # 🔧 Settings
-MAX_ITERS = 1200
+MAX_ITERS = 100
 RESULTS_DIR = "results_eval"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 csv_base_name = "eval_results"
@@ -29,31 +35,6 @@ counter = 1
 while os.path.exists(csv_path):
     csv_path = os.path.join(RESULTS_DIR, f"{csv_base_name}_{counter}.csv")
     counter += 1
-
-# 🧠 Utility: evaluate in-memory
-def eval_from_memory(pred_list, gt_list):
-    assert len(pred_list) == len(gt_list), "Mismatched prediction and ground truth counts"
-
-    # Precision, Recall, F1 at 0.5 threshold
-    final_accuracy_all = cal_prf_metrics(pred_list, gt_list)
-    final_accuracy_all = np.array(final_accuracy_all)
-    Precision_list = final_accuracy_all[:, 1]
-    Recall_list = final_accuracy_all[:, 2]
-    F1_list = final_accuracy_all[:, 3]
-
-    # mIoU, ODS, OIS
-    mIoU = cal_mIoU_metrics(pred_list, gt_list)
-    ODS = cal_ODS_metrics(pred_list, gt_list)
-    OIS = cal_OIS_metrics(pred_list, gt_list)
-
-    return {
-        "mIoU": mIoU,
-        "ODS": ODS,
-        "OIS": OIS,
-        "F1": F1_list[0],
-        "Precision": Precision_list[0],
-        "Recall": Recall_list[0]
-    }
 
 # 🌱 Initialize args
 parser = get_args_parser()
@@ -75,7 +56,7 @@ test_subset = []
 #print(len(test_dl))
 #import sys
 #sys.exit()
-for i in range(len(test_dl)):
+for i in range(MAX_ITERS):
     batch = next(test_iter)
     test_subset.append(batch)
     print(f"{i}.", end="", flush=True)  # Print dot without newline
