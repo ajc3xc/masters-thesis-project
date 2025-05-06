@@ -36,11 +36,11 @@ from util.logger import get_logger
 #add_safe_globals([argparse.Namespace, np.core.multiarray.scalar, np.dtype, _codecs.encode])
 
 DATASET_LIST = [
-    {
-        "name": "TUT",
-        "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/TUT_dataset/TUT/train",
-        "test": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/TUT_dataset/TUT/test",
-    },
+    #{
+    #    "name": "TUT",
+    #    "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/TUT_dataset/TUT/train",
+    #    "test": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/TUT_dataset/TUT/test",
+    #},
     {
         "name": "TUT_Crack_Conglomerate",
         "train": "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/combined_dataset/TUT_Conglomerate_Concrete/train",
