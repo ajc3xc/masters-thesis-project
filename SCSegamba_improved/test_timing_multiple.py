@@ -10,7 +10,7 @@ from eval.evaluate import eval_from_memory
 from main import get_args_parser
 
 # 🔁 Your model checkpoint paths
-CHECKPOINTS = [
+'''CHECKPOINTS = [
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/weights/2025_04_23_11:38:23_Dataset->Crack_Conglomerate/checkpoint_best.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_04_27_11:33:22_Dataset->Crack_Conglomerate/checkpoint_best.pth",
@@ -23,13 +23,28 @@ CHECKPOINTS = [
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/TUT/checkpoint_best.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoints/weights/2025_04_23_11:38:23_Dataset->Crack_Conglomerate/checkpoint_best.pth",
+]'''
+
+CHECKPOINTS = [
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_00:43:43_Dataset->TUT_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_01:39:47_Dataset->TUT_Crack_Conglomerate_original/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_04:16:41_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_05_05_04:25:55_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_04:31:15_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_05_05_04:29:08_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
+    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_05_05_04:31:12_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
 ]
 
 # 🔧 Settings
-MAX_ITERS = 100
+MAX_ITERS = 300
 RESULTS_DIR = "results_eval"
 os.makedirs(RESULTS_DIR, exist_ok=True)
-csv_base_name = "eval_results"
+csv_base_name = "eval_results_dynamic"
 csv_path = os.path.join(RESULTS_DIR, f"{csv_base_name}.csv")
 counter = 1
 while os.path.exists(csv_path):
@@ -74,10 +89,10 @@ for ckpt_path in CHECKPOINTS:
     base_name = os.path.splitext(os.path.basename(ckpt_path))[0]
 
     # Infer fusion + attention type
-    if "scsegamba/" in ckpt_lower:
+    if "original/" in ckpt_lower or "checkpoint_tut.pth" in ckpt_lower:
         args.fusion_mode = "original"
         args.attention_type = None
-    elif "dynamic" in ckpt_lower:
+    elif "dynamic/" in ckpt_lower:
         args.fusion_mode = "dynamic"
     else:
         args.fusion_mode = "weighted"
@@ -96,7 +111,7 @@ for ckpt_path in CHECKPOINTS:
     fusion_str = args.fusion_mode or "unknownfusion"
     attn_str = args.attention_type or "noattn"
     model_name = f"{base_name}_F-{fusion_str}_A-{attn_str}"
-    print(f"\n🔍 Evaluating {model_name} | Fusion: {args.fusion_mode} | Attention: {args.attention_type}")
+    print(f"\n🔍 Evaluating {ckpt_lower} {model_name} | Fusion: {args.fusion_mode} | Attention: {args.attention_type}")
     #continue
 
     # Build + load model
