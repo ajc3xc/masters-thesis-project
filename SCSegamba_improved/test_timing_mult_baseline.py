@@ -31,7 +31,7 @@ def segment_crack_fast(image, win_size=25, k=0.8, min_area=50):
     return clean
 
 # ────────────── 2) Settings ──────────────
-MAX_ITERS   = 300
+MAX_ITERS   = 2
 RESULTS_DIR = "results_eval"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 csv_base_name = "eval_results_dynamic"
@@ -62,67 +62,60 @@ for i in range(MAX_ITERS):
     print(f"{i}.", end="", flush=True)
 print(f"\niterated to limit of {MAX_ITERS}")
 
-# ────────────── 4) Evaluate baseline ──────────────
-print("\n🔍 Evaluating baseline segmentation…")
-baseline_preds = []
-baseline_gts   = []
-baseline_time  = 0.0
+from skimage.morphology import skeletonize
 
+print("\n🔍 Evaluating both baselines (shared segmentation)…")
+preds = []
+gts = []
+time_total = 0.0
 for batch in test_subset:
-    img_t   = batch["image"][0].cpu().numpy()         # (3,H,W)
-    gt_t    = batch["label"][0,0].cpu().numpy()       # (H,W)
-    # convert to uint8 BGR
+    img_t = batch["image"][0].cpu().numpy()
+    gt_t  = batch["label"][0,0].cpu().numpy()
     img_np  = (np.transpose(img_t, (1,2,0)) * 255).astype(np.uint8)
     img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
     t0 = time.time()
-    pred_mask = segment_crack_fast(img_bgr)
+    bin_mask = segment_crack_fast(img_bgr)   # segmentation result
     t1 = time.time()
-    baseline_time += (t1 - t0)
 
-    # normalize GT to 0/255
+    pred_mask = bin_mask
+    preds.append(pred_mask)                  # for eval
+    time_total += (t1 - t0)
+
     if np.max(gt_t) > 0:
         gt_mask = (255 * (gt_t / np.max(gt_t))).astype(np.uint8)
     else:
         gt_mask = np.zeros_like(gt_t, dtype=np.uint8)
+    gts.append(gt_mask)
 
-    baseline_preds.append(pred_mask)
-    baseline_gts.append(gt_mask)
+# evaluate skimage version
+metrics_slow = eval_from_memory(preds, gts)
+metrics_slow["FPS"] = len(test_subset) / time_total
 
-print("evaluating baseline metrics…")
-baseline_metrics = eval_from_memory(baseline_preds, baseline_gts)
-baseline_metrics["FPS"] = len(baseline_preds) / baseline_time
-
-# write baseline row (with header if needed)
-write_header = not os.path.exists(csv_path)
 with open(csv_path, 'a', newline='') as f:
     writer = csv.writer(f)
-    if write_header:
-        writer.writerow(["Model","Fusion","Attention","mIoU","ODS","OIS","F1","Precision","Recall","FPS"])
     writer.writerow([
-        "baseline_fast",      # Model
-        "N/A",                # Fusion
-        "N/A",                # Attention
-        f"{baseline_metrics['mIoU']:.4f}",
-        f"{baseline_metrics['ODS']:.4f}",
-        f"{baseline_metrics['OIS']:.4f}",
-        f"{baseline_metrics['F1']:.4f}",
-        f"{baseline_metrics['Precision']:.4f}",
-        f"{baseline_metrics['Recall']:.4f}",
-        f"{baseline_metrics['FPS']:.2f}",
+        "baseline_paper_slow", "N/A", "N/A",
+        f"{metrics_slow['mIoU']:.4f}",
+        f"{metrics_slow['ODS']:.4f}",
+        f"{metrics_slow['OIS']:.4f}",
+        f"{metrics_slow['F1']:.4f}",
+        f"{metrics_slow['Precision']:.4f}",
+        f"{metrics_slow['Recall']:.4f}",
+        f"{metrics_slow['FPS']:.2f}",
     ])
-print(f"✅ Baseline done → {csv_path}")
+print("✅ baseline_paper_slow done")
 
 # ────────────── 5) Your SCSEGAMBA loop ──────────────
 CHECKPOINTS = [
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_00:43:43_Dataset->TUT_dynamic/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_01:39:47_Dataset->TUT_Crack_Conglomerate_original/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_04:16:41_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_05_05_04:25:55_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
-    "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_04:31:15_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_00:43:43_Dataset->TUT_dynamic/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_01:39:47_Dataset->TUT_Crack_Conglomerate_original/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc/2025_05_05_04:16:41_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/gbc_eca/2025_05_05_04:25:55_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
+    #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_04:31:15_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sebica/2025_05_05_04:29:08_Dataset->TUT_Crack_Conglomerate_dynamic/checkpoint_best.pth",
     "/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/sfa/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth",
