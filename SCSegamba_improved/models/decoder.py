@@ -54,11 +54,16 @@ def build(args):
     device = torch.device(args.device)
     args.device = torch.device(args.device)
 
+    #backbone = SAVSS(arch='Crack',
+    #                 out_indices=(0, 1, 2, 3),
+    #                 drop_path_rate=0.2,
+    #                 final_norm=True,
+    #                 convert_syncbn=True)
     backbone = SAVSS(arch='Crack',
                      out_indices=(0, 1, 2, 3),
                      drop_path_rate=0.2,
                      final_norm=True,
-                     convert_syncbn=True)
+                     convert_syncbn=False)
     model = Decoder(backbone, args)
     criterion = bce_dice(args)
     criterion.to(device)

@@ -56,12 +56,12 @@ print('dataset created')
 test_iter   = iter(test_dl)
 test_subset = []
 #hotwiring doing all of them
-MAX_ITERS = len(test_dl)
-for i in range(MAX_ITERS):
-    test_subset.append(next(test_iter))
-    print(f"{i}.", end="", flush=True)
-print(f"\niterated to limit of {MAX_ITERS}")
-
+#MAX_ITERS = len(test_dl)
+#for i in range(MAX_ITERS):
+#    test_subset.append(next(test_iter))
+#    print(f"{i}.", end="", flush=True)
+#print(f"\niterated to limit of {MAX_ITERS}")
+'''
 from skimage.morphology import skeletonize
 
 print("\n🔍 Evaluating both baselines (shared segmentation)…")
@@ -105,7 +105,7 @@ with open(csv_path, 'a', newline='') as f:
         f"{metrics_slow['FPS']:.2f}",
     ])
 print("✅ baseline_paper_slow done")
-
+'''
 # ────────────── 5) Your SCSEGAMBA loop ──────────────
 CHECKPOINTS = [
     #"/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba/checkpoint_TUT.pth",
@@ -160,12 +160,14 @@ for ckpt_path in CHECKPOINTS:
         _ = model(torch.randn(1, 3, args.load_width, args.load_height).to(device))
     torch.cuda.synchronize()
 
+
+    print("Running inference")
     # inference + gather preds/gts
     preds, gts      = [], []
     total_infer_time=0.0
     with torch.no_grad():
         model.eval()
-        for batch in test_subset:
+        for batch in test_dl:
             x      = batch["image"].to(device)
             target = batch["label"].to(device).long()
 
