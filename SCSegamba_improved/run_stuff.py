@@ -108,28 +108,33 @@ def run_superresolution(onnx: str, imgs: List[Path]) -> List[Path]:
     return sr_paths
 
 # ───────────────────── Adaptive-PCA (unchanged) ────────────────
-from qc_adaptive_pca_test import (mask_quality_check, adaptive_crack_width,
-                                  draw_overlay, save_to_csv)
+from adaptive_pca_test import (
+    adaptive_crack_width,
+    draw_width_lines,
+    save_crack_widths_csv
+)
 
 def run_adaptive_pca(masks: List[Path]):
-    """ Measure crack widths using Adaptive-PCA """
+    """ Measure crack widths using new Adaptive-PCA with smoothing and colormap """
     for mpath in masks:
         mask = cv2.imread(str(mpath), cv2.IMREAD_GRAYSCALE)
         if mask.max() > 1:
             _, mask = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-        if not mask_quality_check(mask):
-            print(f"[PCA] {mpath.name} rejected")
-            continue
-        res = adaptive_crack_width(mask)
-        if not res:
+
+        widths = adaptive_crack_width(mask)
+        if not widths:
             print(f"[PCA] {mpath.name} no widths")
             continue
-        ov = draw_overlay(mask, res)
+
         ov_path = OVD / f"{mpath.stem}_ovl.png"
         csv_path = CSVD / f"{mpath.stem}.csv"
-        cv2.imwrite(str(ov_path), ov)
-        save_to_csv(res, str(csv_path))
-        print(f"[PCA] {mpath.name}  mean={np.mean([w for *_ ,w in res]):.2f}px")
+
+        overlay = draw_width_lines(mask, widths)
+        cv2.imwrite(str(ov_path), overlay)
+        save_crack_widths_csv(widths, str(csv_path))
+
+        w = [w for _, _, w in widths]
+        print(f"[PCA] {mpath.name}  mean={np.mean(w):.2f}px  min={np.min(w):.2f}px  max={np.max(w):.2f}px")
 
 # ────────────────────────── MAIN ───────────────────────────
 if __name__ == "__main__":
