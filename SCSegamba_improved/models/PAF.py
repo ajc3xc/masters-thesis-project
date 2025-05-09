@@ -29,8 +29,10 @@ class PAF(nn.Module):
             in_norm(in_channels)
         )
 
-        if after_relu:
-            self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=True)
+
+        #if after_relu:
+        #    self.relu = nn.ReLU(inplace=True)
 
     def forward(self, base_feat: torch.Tensor, guidance_feat: torch.Tensor) -> torch.Tensor:
         base_shape = base_feat.size()

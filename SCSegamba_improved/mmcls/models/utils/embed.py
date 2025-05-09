@@ -41,33 +41,18 @@ def resize_pos_embed(pos_embed,
     assert pos_embed.ndim == 3, 'shape of pos_embed must be [1, L, C]'
     _, L, C = pos_embed.shape
     src_h, src_w = src_shape
-
-    expected_len = src_h * src_w + num_extra_tokens
-    assert L == expected_len, f"Expected pos_embed length {expected_len}, got {L}"
-    #assert L == src_h * src_w + num_extra_tokens, \
-    #    f"The length of `pos_embed` ({L}) doesn't match the expected " \
-    #    f'shape ({src_h}*{src_w}+{num_extra_tokens}). Please check the' \
-    #    '`img_size` argument.'
+    assert L == src_h * src_w + num_extra_tokens, \
+        f"The length of `pos_embed` ({L}) doesn't match the expected " \
+        f'shape ({src_h}*{src_w}+{num_extra_tokens}). Please check the' \
+        '`img_size` argument.'
     extra_tokens = pos_embed[:, :num_extra_tokens]
 
-    #src_weight = pos_embed[:, num_extra_tokens:]
-    #src_weight = src_weight.reshape(1, src_h, src_w, C).permute(0, 3, 1, 2)
-
-    #dst_weight = F.interpolate(
-    #    src_weight, size=dst_shape, align_corners=False, mode=mode)
-    #dst_weight = torch.flatten(dst_weight, 2).transpose(1, 2)
-
     src_weight = pos_embed[:, num_extra_tokens:]
+    src_weight = src_weight.reshape(1, src_h, src_w, C).permute(0, 3, 1, 2)
 
-    # reshape to [1, C, H, W] directly
-    src_weight = src_weight.reshape(1, src_h, src_w, C).permute(0, 3, 1, 2)  # → (1, C, H, W)
-
-    # interpolate to new patch resolution
     dst_weight = F.interpolate(
         src_weight, size=dst_shape, align_corners=False, mode=mode)
-
-    # flatten back to [1, L, C]
-    dst_weight = dst_weight.permute(0, 2, 3, 1).reshape(1, -1, C)
+    dst_weight = torch.flatten(dst_weight, 2).transpose(1, 2)
 
     return torch.cat((extra_tokens, dst_weight), dim=1)
 
@@ -128,7 +113,7 @@ def resize_relative_position_bias_table(src_shape, dst_shape, table, num_head):
     return new_rel_pos_bias
 
 
-'''class PatchEmbed(BaseModule):
+class PatchEmbed(BaseModule):
     """Image to Patch Embedding.
 
     We use a conv layer to implement PatchEmbed.
@@ -201,75 +186,8 @@ def resize_relative_position_bias_table(src_shape, dst_shape, table, num_head):
         if self.norm is not None:
             x = self.norm(x)
 
-        return x'''
+        return x
 
-
-class PatchEmbed(BaseModule):
-    """Dynamic Image→Patch embedding: conv→flatten with runtime H×W."""
-
-    def __init__(self,
-                 img_size=224,
-                 in_channels=3,
-                 embed_dims=768,
-                 norm_cfg=None,
-                 conv_cfg=None,
-                 init_cfg=None):
-        super(PatchEmbed, self).__init__(init_cfg)
-        warnings.warn(
-            'Patchembed now supports any H×W (drops the static img_size check)'
-        )
-        # preserve img_size attr but no longer assert on it
-        if isinstance(img_size, int):
-            img_size = to_2tuple(img_size)
-        elif isinstance(img_size, tuple) and len(img_size) == 1:
-            img_size = to_2tuple(img_size[0])
-        self.img_size = img_size
-        self.embed_dims = embed_dims
-
-        # conv → patch
-        conv_cfg = conv_cfg or {}
-        _conv_cfg = dict(type='Conv2d', kernel_size=16, stride=16,
-                         padding=0, dilation=1)
-        _conv_cfg.update(conv_cfg)
-        self.projection = build_conv_layer(_conv_cfg, in_channels, embed_dims)
-
-        # optional normalization on the token sequence
-        if norm_cfg is not None:
-            self.norm = build_norm_layer(norm_cfg, embed_dims)[1]
-        else:
-            self.norm = None
-
-        # will be set at forward time
-        self.patches_resolution = None
-        self.num_patches = None
-
-    def forward(self, x):
-        """
-        Args:
-            x (Tensor[B, C_in, H, W]): any H×W (multiples of patch stride).
-        Returns:
-            Tensor[B, N, D], where
-              D = embed_dims,
-              N = h_out * w_out  (computed at runtime).
-        Side-effects:
-            sets self.patches_resolution = (h_out, w_out)
-            sets self.num_patches       = N
-        """
-        # conv→(B, D, h_out, w_out)
-        proj = self.projection(x)
-        B, D, h_out, w_out = proj.shape
-
-        # flatten to sequence (B, h_out*w_out, D)
-        tokens = proj.flatten(2).transpose(1, 2)
-
-        if self.norm is not None:
-            tokens = self.norm(tokens)
-
-        # record for downstream layers
-        self.patches_resolution = (h_out, w_out)
-        self.num_patches = h_out * w_out
-
-        return tokens
 
 # Modified from pytorch-image-models
 class HybridEmbed(BaseModule):

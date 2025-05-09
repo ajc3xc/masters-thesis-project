@@ -5,7 +5,7 @@ from argparse import Namespace
 
 # ─── Update these two paths ───────────────────────────────────────────────
 CHECKPOINT_PATH = Path("/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/SCSegamba_improved/checkpoints/weights/eca/2025_05_05_00:47:18_Dataset->TUT_dynamic/checkpoint_best.pth")
-OUTPUT_ONNX_PATH = Path("onnx_exports/TUT_eca_dynamic.onnx")
+OUTPUT_ONNX_PATH = Path("onnx_exports/TUT_eca_dynamic_1792.onnx")
 # ──────────────────────────────────────────────────────────────────────────
 
 # Make sure the output dir exists
@@ -36,7 +36,7 @@ args = Namespace(
     seed=42,
     serial_batches=False,
     num_threads=1,
-    input_size=512,
+    input_size=1792,
 )
 from models import build_model
 model, _ = build_model(args)
@@ -79,7 +79,7 @@ class ModelWrapper(torch.nn.Module):
 wrapper = ModelWrapper(model).to(args.device)
 
 # dummy input: channel=1 (grayscale), H and W can be *anything* at inference
-dummy_input = torch.randn(1, 1, 512, 512, device=args.device)
+dummy_input = torch.randn(1, 1, 1792, 1792, device=args.device)
 
 with torch.no_grad():
     torch.onnx.export(

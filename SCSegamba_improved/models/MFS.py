@@ -3,6 +3,8 @@ Author: Hui Liu
 Modified by: Adam Camerer via ChatGPT
 '''
 
+from typing import List
+
 import torch
 import torch.nn as nn
 from models.GBC import GBC, BottConv
@@ -36,6 +38,7 @@ class MFS(nn.Module):
 
         self.GBC_8 = GBC(8, norm_type='IN')
         self.GN_C = nn.GroupNorm(num_channels=embedding_dim * 4, num_groups=max(1, embedding_dim * 4 // 16))
+        #self.GBC_C = GBC(embedding_dim * 4, use_eca=False)
 
         if fusion_mode == 'original':
             self.use_original = True
@@ -71,8 +74,34 @@ class MFS(nn.Module):
         self.linear_pred = BottConv(embedding_dim, 1, 1, kernel_size=1)
         self.linear_pred_1 = nn.Conv2d(1, 1, kernel_size=1)
 
-    def forward(self, inputs):
-        c4, c3, c2, c1 = inputs
+    #def _transform(self, c, linear, dy):
+    #    b, c_, h, w = c.shape
+    #    out = linear(c.reshape(b, c_, h * w).permute(0, 2, 1))
+    #    return out.permute(0, 2, 1).reshape(b, dy, h, w)
+    
+    '''def _transform_c4(self, c):
+        b, c_, h, w = c.shape
+        out = self.linear_c4(c.reshape(b, c_, h * w).permute(0, 2, 1))
+        return self.DySample_C_8(out.permute(0, 2, 1).reshape(b, self.embedding_dim, h, w))
+    
+    def _transform_c1(self, c):
+        b, c_, h, w = c.shape
+        out = self.linear_c4(c.reshape(b, c_, h * w).permute(0, 2, 1))
+        return self.DySample_C_8(out.permute(0, 2, 1).reshape(b, self.embedding_dim, h, w))
+    
+    def _transform_c3(self, c):
+        b, c_, h, w = c.shape
+        out = self.linear_c3(c.reshape(b, c_, h * w).permute(0, 2, 1))
+        return self.DySample_C_8(out.permute(0, 2, 1).reshape(b, self.embedding_dim, h, w))
+    
+    def _transform_c2(self, c):
+        b, c_, h, w = c.shape
+        out = self.linear_c4(c.reshape(b, c_, h * w).permute(0, 2, 1))
+        return self.DySample_C_8(out.permute(0, 2, 1).reshape(b, self.embedding_dim, h, w))'''
+
+    
+    def forward(self, inputs: List[torch.Tensor]):
+        c4, c3, c2, c1 = inputs[0], inputs[1], inputs[2], inputs[3]
 
         def transform(c, linear, dy):
             b, c_, h, w = c.shape
@@ -82,12 +111,17 @@ class MFS(nn.Module):
         out_c4 = transform(c4, self.linear_c4, self.DySample_C_8)
         out_c3 = transform(c3, self.linear_c3, self.DySample_C_4)
         out_c2 = transform(c2, self.linear_c2, self.DySample_C_2)
+        #out_c4 = self._transform_c4(c4)
+        #out_c3 = self._transform_c3(c3)
+        #out_c2 = self._transform_c2(c2)
         b, c, h, w = c1.shape
         out_c1 = self.linear_c1(c1.reshape(b, c, h * w).permute(0, 2, 1)).permute(0, 2, 1).reshape(b, self.embedding_dim, h, w)
 
         if self.use_original:
             out_c = self.GBC_C(torch.cat([out_c4, out_c3, out_c2, out_c1], dim=1))
         else:
+            #features = torch.jit.annotate(List[torch.Tensor], [out_c4, out_c3, out_c2, out_c1])
+            #fused = self.fusion(features)
             fused = self.fusion([out_c4, out_c3, out_c2, out_c1])
             out_c = self.attention(fused)
 

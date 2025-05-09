@@ -47,6 +47,7 @@ args = parser.parse_args([])
 args.phase        = 'test'
 args.dataset_path = '/mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/data/crack_segmentation_unzipped/crack_segmentation/virginia_tech_concrete_crack_congolmeration/Conglomerate Concrete Crack Detection/Conglomerate Concrete Crack Detection/Test'
 args.batch_size   = 1
+args.device = 'cuda'
 device = torch.device(args.device)
 
 print('creating dataset')
@@ -57,10 +58,11 @@ test_iter   = iter(test_dl)
 test_subset = []
 #hotwiring doing all of them
 #MAX_ITERS = len(test_dl)
-#for i in range(MAX_ITERS):
-#    test_subset.append(next(test_iter))
-#    print(f"{i}.", end="", flush=True)
-#print(f"\niterated to limit of {MAX_ITERS}")
+for i in range(MAX_ITERS):
+    test_subset.append(next(test_iter))
+    print(f"{i}.", end="", flush=True)
+print(f"\niterated to limit of {MAX_ITERS}")
+test_dl = test_subset
 '''
 from skimage.morphology import skeletonize
 

@@ -8,6 +8,8 @@ CrackMamba/
 sam2/
 WaveMixSR/
 
+mmcls_n/
+models/
 sr_models/
 *.out
 checkpoints/

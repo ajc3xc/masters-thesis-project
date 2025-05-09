@@ -95,7 +95,7 @@ class SAVSS_2D(nn.Module):
         self.direction_Bs = nn.Parameter(torch.zeros(self.n_directions + 1, self.d_state))
         trunc_normal_(self.direction_Bs, std=0.02)
 
-    '''def sass(self, hw_shape):
+    def sass(self, hw_shape):
         H, W = hw_shape
         L = H * W
         o1, o2, o3, o4 = [], [], [], []
@@ -200,70 +200,11 @@ class SAVSS_2D(nn.Module):
 
         return (tuple(o1), tuple(o2), tuple(o3), tuple(o4)), \
             (tuple(o1_inverse), tuple(o2_inverse), tuple(o3_inverse), tuple(o4_inverse)), \
-            (tuple(d1), tuple(d2), tuple(d3), tuple(d4))'''
-        
-    def sass(self, hw_shape):
-        H, W = hw_shape
-        L = H * W
-        idx = torch.arange(L).reshape(H, W)
-
-        # Horizontal snake scan
-        even_rows = idx[0::2].reshape(-1)
-        odd_rows = idx[1::2].flip(dims=[1]).reshape(-1)
-        o1 = torch.cat([even_rows, odd_rows], dim=0)
-
-        # Vertical snake scan
-        idx_T = idx.t()
-        even_cols = idx_T[0::2].reshape(-1)
-        odd_cols = idx_T[1::2].flip(dims=[1]).reshape(-1)
-        o2 = torch.cat([even_cols, odd_cols], dim=0)
-
-        # Diagonals (TL→BR)
-        diags = []
-        for k in range(-(H - 1), W):
-            i = torch.arange(H)
-            j = i - k
-            mask = (j >= 0) & (j < W)
-            d = idx[i[mask], j[mask]]
-            if k % 2 != 0:
-                d = d.flip(0)
-            diags.append(d)
-        o3 = torch.cat(diags, dim=0)
-
-        # Anti-diagonals (TR→BL)
-        idx_flip = torch.flip(idx, dims=[1])
-        anti_diags = []
-        for k in range(-(H - 1), W):
-            i = torch.arange(H)
-            j = i - k
-            mask = (j >= 0) & (j < W)
-            d = idx_flip[i[mask], j[mask]]
-            if k % 2 != 0:
-                d = d.flip(0)
-            anti_diags.append(d)
-        o4 = torch.cat(anti_diags, dim=0)
-
-        # Inverse mappings
-        inv1 = torch.empty_like(o1); inv1[o1] = torch.arange(L)
-        inv2 = torch.empty_like(o2); inv2[o2] = torch.arange(L)
-        inv3 = torch.empty_like(o3); inv3[o3] = torch.arange(L)
-        inv4 = torch.empty_like(o4); inv4[o4] = torch.arange(L)
-
-        # Direction codes (optional / dummy placeholder for compatibility)
-        d1 = torch.zeros_like(o1)
-        d2 = torch.zeros_like(o2)
-        d3 = torch.zeros_like(o3)
-        d4 = torch.zeros_like(o4)
-
-        return (o1, o2, o3, o4), (inv1, inv2, inv3, inv4), (d1, d2, d3, d4)
-
+            (tuple(d1), tuple(d2), tuple(d3), tuple(d4))
 
     def forward(self, x, hw_shape):
-        #batch_size, L, _ = x.shape
-        #H, W = hw_shape
         batch_size, L, _ = x.shape
-        H = W = int(L ** 0.5)
-        assert H * W == L, f"Got L={L} but H*W={H*W}"
+        H, W = hw_shape
         E = self.d_inner
 
         conv_state, ssm_state = None, None
@@ -353,14 +294,8 @@ class SAVSS_Layer(nn.Module):
 
     def forward(self, x, hw_shape):
         B, L, C = x.shape
-        #H = W = int(math.sqrt(L))
-        #x = x.reshape(B, H, W, C).permute(0, 3, 1, 2)
-        #H, W = hw_shape
-        #assert L == H * W, f"Got L={L} but H*W={H*W}"
-        #x = x.view(B, H, W, C).permute(0, 3, 1, 2)
-        H = W = int(L ** 0.5)
-        assert H * W == L, f"Got L={L} but H*W={H*W}"
-        x = x.view(B, H, W, C).permute(0, 3, 1, 2)
+        H = W = int(math.sqrt(L))
+        x = x.reshape(B, H, W, C).permute(0, 3, 1, 2)
 
         for i in range(2):
             x = self.GBC_C(x)
@@ -368,9 +303,7 @@ class SAVSS_Layer(nn.Module):
         x = x.permute(0, 2, 3, 1).reshape(B, H * W, C)
         mixed_x = self.drop_path(self.SAVSS_2D(self.norm(x), hw_shape))
         b, l, c = mixed_x.shape
-        #h = w = int(math.sqrt(l))
-        h, w = hw_shape            # again, real H,W
-        assert l == h * w, f"Got l={l} but h*w={h*w}"
+        h = w = int(math.sqrt(l))
         mixed_x = self.PAF_256(x.permute(0, 2, 1).reshape(b, c, h, w),
                                mixed_x.permute(0, 2, 1).reshape(b, c, h, w))
         mixed_x = self.GN_256(mixed_x).reshape(b, c, h * w).permute(0, 2, 1)
