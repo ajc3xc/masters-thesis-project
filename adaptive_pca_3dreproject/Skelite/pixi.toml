@@ -1,0 +1,38 @@
+[workspace]
+authors = ["Adam Camerer <ajc3xc@umsystem.edu>"]
+channels = ["https://prefix.dev/conda-forge","conda-forge"]
+name = "adaptive_pca_3dreproject"
+platforms = ["win-64"]
+version = "0.1.0"
+
+[tasks]
+
+[system-requirements]
+cuda = "11.8"
+
+[dependencies]
+python = "==3.9"
+#pytorch = { version = "1.9.1.*", channel = "pytorch" }
+#cudatoolkit = "11.8.*"
+
+
+[pypi-dependencies]
+torch = { version = "*", index = "https://download.pytorch.org/whl/cu118" }
+torchvision = { version = "*", index = "https://download.pytorch.org/whl/cu118" }
+#torchmeta = "==1.8.0"
+matplotlib = ">=3.9.4, <4"
+chardet = ">=5.2.0, <6"
+termcolor = ">=3.1.0, <4"
+networkx = ">=3.2.1, <4"
+panel = "==0.14.0"
+pandas = "==1.5.2"
+monai = "==1.0.0"
+gudhi = ">=3.11.0, <4"
+optuna = ">=4.3.0, <5"
+fastgeodis = ">=1.0.5, <2"
+wandb = ">=0.20.0, <0.21"
+kornia = ">=0.8.1, <0.9"
+loss-landscapes = ">=3.0.6, <4"
+imageio = "*"
+numpy = "<2"
+scikit-image = ">=0.24.0, <0.25"

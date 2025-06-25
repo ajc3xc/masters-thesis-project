@@ -1,0 +1,26 @@
+[workspace]
+authors = ["ajc3xc <ajc3xc@umsystem.edu>"]
+channels = ["nvidia", "pytorch", "conda-forge"]
+name = "deeplab_xception"
+platforms = ["win-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.8.*"
+#inotify-tools = ">=3.20.2,<4"
+#git-lfs = ">=3.6.1,<4"
+pytorch = ">=1.12,<2"
+
+# Core packages from conda channels
+
+[pypi-dependencies]
+#torch = ">=1.12,<2"
+torchvision = ">=0.13"
+tensorboardX = "*"
+pillow = "*"
+matplotlib = "*"
+tqdm = "*"
+scipy = "*"
+opencv-python-headless = ">=4.11.0.86, <5"

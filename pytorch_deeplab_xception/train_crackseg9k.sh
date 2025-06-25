@@ -1,0 +1,3 @@
+$env:PATH = "D:\camerer_ml\cudnn\cudnn-windows-x86_64-8.9.7.29_cuda11-archive\bin;" + $env:PATH
+$env:PATH = "D:\camerer_ml\.pixi\envs\default\Lib\site-packages\nvidia\cublas\bin;" + $env:PATH
+python train.py --backbone xception --dataset crackseg9k --checkname crackseg9k_xception --checkname crackseg9k_pretrain_imagenet --epochs 50 --base-size 400 --crop-size 400 --no-val --batch-size 16 --lr 0.01 --gpu-ids 0

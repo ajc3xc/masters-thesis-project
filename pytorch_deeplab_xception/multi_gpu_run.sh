@@ -1,0 +1,19 @@
+sbatch --account=general \
+       --partition=gpu \
+       --gres=gpu:1 \
+       --cpus-per-task=16 \
+       --mem=64G \
+       --time=18:00:00 \
+       --output=logs/metu_finetune_2gpu_%j.out \
+       --wrap="cd ~/projects/deeplab_xception && pixi run -e default -- torchrun --nproc_per_node=2 /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/pytorch-deeplab-xception/train.py \
+         --backbone xception \
+         --dataset metu \
+         --checkname metu_xception_fine_tuned \
+         --epochs 200 \
+         --base-size 3024 \
+         --crop-size 4032 \
+         --batch-size 2 \
+         --lr 0.01 \
+         --gpu-ids 0,1 \
+         --resume /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/pytorch-deeplab-xception/run/crackseg9k/crackseg9k_xception/experiment_10/checkpoint.pth.tar \
+         --ft"

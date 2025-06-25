@@ -1,0 +1,6 @@
+------- Mean Results (over 458 images) -------
+CPU mean      : 0.209s
+GPU mean      : 0.193s
+Mini GPU mean : 0.203s
+Medial Axis mean: 0.047s
+All Mini-GPU == CPU? True

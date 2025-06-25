@@ -1,0 +1,55 @@
+batch_size: 32   # Lower batch size to account for scaling up to 2.25x
+iters: 12500
+pretrained_model: C:\Users\ajc3xc\ml\hrsegnet\hrsegnet_models\hrsegnetb32\best_model
+
+train_dataset:
+  type: Dataset
+  dataset_root: C:\Users\ajc3xc\ml\datasets\concrete3k\concrete3k
+  train_path: C:\Users\ajc3xc\ml\datasets\concrete3k\concrete3k\train_whole.txt
+  num_classes: 2
+  mode: train
+  transforms:
+  - type: ResizeStepScaling
+    min_scale_factor: 1
+    max_scale_factor: 2
+    scale_step_size: 0.25
+  - type: RandomPaddingCrop
+    crop_size: [500, 500]
+  - type: RandomHorizontalFlip
+  - type: RandomDistort
+    brightness_range: 0.5
+    contrast_range: 0.5
+    saturation_range: 0.5
+  - type: Normalize
+
+val_dataset:
+  type: Dataset
+  dataset_root: C:\Users\ajc3xc\ml\datasets\concrete3k\concrete3k
+  val_path: C:\Users\ajc3xc\ml\datasets\concrete3k\concrete3k\val_whole.txt
+  num_classes: 2
+  mode: val
+  transforms:
+    - type: Normalize
+
+model:
+  type: HrSegNetB32   # or HrSegNetB48/B64 as your VRAM allows
+
+optimizer:
+  type: SGD
+  momentum: 0.9
+  weight_decay: 0.0005
+
+loss:
+  types:
+    - type: OhemCrossEntropyLoss
+    - type: OhemCrossEntropyLoss
+    - type: OhemCrossEntropyLoss
+  coef: [1, 0.5, 0.5]
+
+lr_scheduler:
+  type: PolynomialDecay
+  learning_rate: 0.01
+  end_lr: 0.0
+  power: 0.9
+  warmup_iters: 2000
+  warmup_start_lr: 1.0e-5

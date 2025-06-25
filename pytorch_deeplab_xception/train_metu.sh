@@ -1,0 +1,2 @@
+#export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+python train.py --backbone xception --dataset metu --checkname metu_xception_fine_tuned --epochs 200 --base-size 3024 --crop-size  --batch-size 1 --lr 0.01 --gpu-ids 0 --resume /mnt/stor/ceph/gchen-lab/data/Adam/masters-thesis-project/pytorch-deeplab-xception/run/crackseg9k/crackseg9k_xception/experiment_10/checkpoint.pth.tar --ft
