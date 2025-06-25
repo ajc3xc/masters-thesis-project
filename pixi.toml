@@ -1,0 +1,50 @@
+[project]
+authors = ["Adam Camerer <ajc3xc@umsystem.edu>"]
+channels  = ["rapidsai", "conda-forge"]
+name = "cucim"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[dependencies]
+python      = "==3.10"
+cuda-version = "==11.8"
+cudatoolkit = "==11.8"
+cupy        = "*"
+cucim = "==23.4.0"
+sfepy = ">=2025.1,<2026"
+fenics = ">=2019.1.0,<2020"
+pip = ">=25.1.1,<26"
+kiwisolver = ">=1.4.7,<2"
+
+[tasks]
+# Optional: a one-liner to run your script
+test-skel   = "python test_skeleton.py"
+
+[pypi-dependencies]
+matplotlib = "*"
+pandas = ">=2.3.0, <3"
+skan = ">=0.12.2, <0.13"
+sknw = ">=0.15, <0.16"
+cython = ">=3.1.2, <4"
+
+#pip install numpy<2
+subpixel-edges = "*"
+phycv = "*"
+torch = "*"
+torchvision = "*"
+scikit-image = "*"
+opencv-python-headless = "*"
+scikit-learn = ">=1.7.0, <2"
+scipy = "*"
+pillow = "*"
+ridge-detection = ">=3.0.0, <4"
+crackpy = ">=1.2.3, <2"
+sfepy = "*"
+fenics = ">=2019.1.0, <2020"
+seaborn = ">=0.13.2, <0.14"
+scikit-gstat = ">=1.0.21, <2"
+vedo = ">=2025.5.4, <2026"
+numpy = "<2"
+setuptools = "*"
+#python etup.py install in pySimFrac/src
+

@@ -1,0 +1,34 @@
+Width Method Timing and Statistics
+
+Method: Medial+DSE
+  Timing: 1494.0 ms
+  Mean: 139.27 px
+  Std:  179.31 px
+  Min:  2.00 px
+  Max:  506.06 px
+  Num:  7903
+
+Method: Canny+Profile
+  Timing: 1068.7 ms
+  Mean: 0.00 px
+  Std:  0.06 px
+  Min:  0.00 px
+  Max:  2.00 px
+  Num:  7790
+
+Method: PCA-Local
+  Timing: 4176.7 ms
+  Mean: 29.66 px
+  Std:  14.47 px
+  Min:  4.42 px
+  Max:  55.86 px
+  Num:  8118
+
+Method: Profile-Normal
+  Timing: 663076.3 ms
+  Mean: 5.50 px
+  Std:  10.37 px
+  Min:  0.00 px
+  Max:  38.83 px
+  Num:  8001
+
