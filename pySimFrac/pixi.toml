@@ -1,0 +1,22 @@
+[workspace]
+authors = ["Adam Camerer <ajc3xc@umsystem.edu>"]
+channels = ["nvidia", "rapidsai", "conda-forge"]
+name = "pySimFrac"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "==3.10"
+pip = ">=25.1.1,<26"
+sfepy = ">=2025.1,<2026"
+cucim = "==23.4.0"
+scikit-image = ">=0.20.0,<0.21"
+cupy = ">=11.6.0,<12"
+cudatoolkit = "==11.8"
+imageio = ">=2.37.0,<3"
+pillow = ">=9.4.0,<10"
+
+[pypi-dependencies]
+sknw = ">=0.15, <0.16"
